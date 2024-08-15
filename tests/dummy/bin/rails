@@ -1,0 +1,4 @@
+#!/usr/bin/env ruby
+
+command, *args = ARGV
+File.write(command, args.join(" ") + "\n", mode: 'a')
