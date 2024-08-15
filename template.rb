@@ -116,7 +116,7 @@ unless SKIP_SOLID_QUEUE
   end
 
   # 3. define the new database configuration
-  database_yaml = DatabaseYAML.new path: find_in_source_paths("config/database.yml")
+  database_yaml = DatabaseYAML.new path: File.expand_path("config/database.yml", destination_root)
   insert_into_file "config/database.yml",
                    database_yaml.new_database(QUEUE_DB) + "\n",
                    after: database_yaml.database_def_regex("default"),
@@ -202,7 +202,7 @@ unless SKIP_SOLID_CACHE
   end
 
   # 3. define the new database configuration
-  database_yaml = DatabaseYAML.new path: find_in_source_paths("config/database.yml")
+  database_yaml = DatabaseYAML.new path: File.expand_path("config/database.yml", destination_root)
   insert_into_file "config/database.yml",
                    database_yaml.new_database(CACHE_DB) + "\n",
                    after: database_yaml.database_def_regex(QUEUE_DB),
