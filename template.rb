@@ -133,6 +133,7 @@ unless SKIP_SOLID_QUEUE
 
   # 3. define the new database configuration
   database_yaml = DatabaseYAML.new path: File.expand_path("config/database.yml", destination_root)
+  # NOTE: this `insert_into_file` call is idempotent because we are only inserting a plain string.
   insert_into_file "config/database.yml",
                    database_yaml.new_database(QUEUE_DB) + "\n",
                    after: database_yaml.database_def_regex("default"),
@@ -141,6 +142,7 @@ unless SKIP_SOLID_QUEUE
 
   # 4. add the new database configuration to all environments
   database_yaml.add_database(QUEUE_DB).each do |environment, old_environment_entry, new_environment_entry|
+    # NOTE: this `gsub_file` call is idempotent because we are only finding and replacing plain strings.
     gsub_file "config/database.yml",
               old_environment_entry,
               new_environment_entry,
@@ -187,6 +189,7 @@ unless SKIP_SOLID_QUEUE
   end
 
   # 8. add the Solid Queue plugin to Puma
+  # NOTE: this `insert_into_file` call is idempotent because we are only inserting a plain string.
   insert_into_file "config/puma.rb", after: "plugin :tmp_restart" do
     [
       "",
@@ -242,6 +245,7 @@ unless SKIP_SOLID_CACHE
 
   # 3. define the new database configuration
   database_yaml = DatabaseYAML.new path: File.expand_path("config/database.yml", destination_root)
+  # NOTE: this `insert_into_file` call is idempotent because we are only inserting a plain string.
   insert_into_file "config/database.yml",
                    database_yaml.new_database(CACHE_DB) + "\n",
                    after: database_yaml.database_def_regex(QUEUE_DB),
@@ -250,6 +254,7 @@ unless SKIP_SOLID_CACHE
 
   # 4. add the new database configuration to all environments
   database_yaml.add_database(CACHE_DB).each do |environment, old_environment_entry, new_environment_entry|
+    # NOTE: this `gsub_file` call is idempotent because we are only finding and replacing plain strings.
     gsub_file "config/database.yml",
               old_environment_entry,
               new_environment_entry,
@@ -272,6 +277,7 @@ unless SKIP_SOLID_CACHE
   end
 
   # 7. configure Solid Cache to use the new database
+  # NOTE: this `gsub_file` call is idempotent because we are only finding and replacing plain strings.
   gsub_file "config/solid_cache.yml",
             "database: <%= Rails.env %>",
             "database: #{CACHE_DB}"
@@ -304,6 +310,7 @@ unless SKIP_LITESTREAM
   end
 
   # 4. add the Litestream plugin to Puma
+  # NOTE: this `insert_into_file` call is idempotent because we are only inserting a plain string.
   insert_into_file "config/puma.rb", after: "plugin :tmp_restart" do
     [
       "",
