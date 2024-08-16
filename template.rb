@@ -163,14 +163,27 @@ unless SKIP_SOLID_QUEUE
   end
 
   # 7. configure the application to use Solid Queue in all environments with the new database
-  insert_into_file "config/application.rb", after: /^([ \t]*)config.load_defaults.*$/ do
-    [
-      "",
-      "",
-      "\\1# Use Solid Queue for background jobs",
-      "\\1config.active_job.queue_adapter = :solid_queue",
-      "\\1config.solid_queue.connects_to = { database: { writing: :#{QUEUE_DB} } }",
-    ].join("\n")
+  # NOTE: `insert_into_file` with replacement text that contains regex backreferences will not be idempotent,
+  # so we need to check if the line is already present before adding it.
+  configure_queue_adapter = "config.active_job.queue_adapter = :solid_queue"
+  configure_solid_queue = "config.solid_queue.connects_to = { database: { writing: :#{QUEUE_DB} } }"
+  if not file_includes?("config/application.rb", configure_queue_adapter)
+    insert_into_file "config/application.rb", after: /^([ \t]*)config.load_defaults.*$/ do
+      [
+        "",
+        "",
+        "\\1# Use Solid Queue for background jobs",
+        "\\1#{configure_queue_adapter}"
+      ].join("\n")
+    end
+  end
+  if not file_includes?("config/application.rb", configure_solid_queue)
+    insert_into_file "config/application.rb", after: /^([ \t]*)config.active_job.queue_adapter = :solid_queue.*$/ do
+      [
+        "",
+        "\\1#{configure_solid_queue}",
+      ].join("\n")
+    end
   end
 
   # 8. add the Solid Queue plugin to Puma
@@ -186,20 +199,30 @@ unless SKIP_SOLID_QUEUE
   add_gem "mission_control-jobs", "~> 0.3", comment: "Add a web UI for Solid Queue"
 
   # 10. mount the Solid Queue engine
-  insert_into_file "config/routes.rb",  after: /^([ \t]*).*rails_health_check$/ do
-    [
-      "",
-      "",
-      %Q{\\1mount MissionControl::Jobs::Engine, at: "#{JOBS_ROUTE}"}
-    ].join("\n")
+  # NOTE: `insert_into_file` with replacement text that contains regex backreferences will not be idempotent,
+  # so we need to check if the line is already present before adding it.
+  mount_mission_control_jobs = %Q{mount MissionControl::Jobs::Engine, at: "#{JOBS_ROUTE}"}
+  if not file_includes?("config/routes.rb", mount_mission_control_jobs)
+    insert_into_file "config/routes.rb",  after: /^([ \t]*).*rails_health_check$/ do
+      [
+        "",
+        "",
+        "\\1#{mount_mission_control_jobs}"
+      ].join("\n")
+    end
   end
 
-  insert_into_file "config/application.rb", after: /^([ \t]*)config.solid_queue.*$/ do
-    [
-      "",
-      "\\1# Ensure authorization is enabled for the Solid Queue web UI",
-      %Q{\\1config.mission_control.jobs.base_controller_class = "#{JOBS_CONTROLLER}"},
-    ].join("\n")
+  # NOTE: `insert_into_file` with replacement text that contains regex backreferences will not be idempotent,
+  # so we need to check if the line is already present before adding it.
+  configure_mission_control_jobs = %Q{config.mission_control.jobs.base_controller_class = "#{JOBS_CONTROLLER}"}
+  if not file_includes?("config/application.rb", configure_mission_control_jobs)
+    insert_into_file "config/application.rb", after: /^([ \t]*)config.solid_queue.*$/ do
+      [
+        "",
+        "\\1# Ensure authorization is enabled for the Solid Queue web UI",
+        "\\1#{configure_mission_control_jobs}",
+      ].join("\n")
+    end
   end
 end
 
