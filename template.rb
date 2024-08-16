@@ -93,21 +93,31 @@ class DatabaseYAML
   end
 end
 
+def idempotent_gem(*args)
+  name, *versions = args
+  destination = File.expand_path("Gemfile", destination_root)
+  content = File.read(destination)
+  replacement = "gem \"#{name}\""
+  return if content.include?(replacement)
+
+  gem(*args)
+end
+
 # ------------------------------------------------------------------------------
 
 # Ensure all SQLite connections are properly configured
 if AT_LEAST_RAILS_8
 else
-  gem "activerecord-enhancedsqlite3-adapter", "~> 0.8.0", comment: "Ensure all SQLite connections are properly configured"
+  idempotent_gem "activerecord-enhancedsqlite3-adapter", "~> 0.8.0", comment: "Ensure all SQLite connections are properly configured"
 end
 
 # Add Solid Queue
 unless SKIP_SOLID_QUEUE
   # 1. add the appropriate solid_queue gem version
   if AT_LEAST_RAILS_8
-    gem "solid_queue", "~> 0.4", comment: "Add Solid Queue for background jobs"
+    idempotent_gem "solid_queue", "~> 0.4", comment: "Add Solid Queue for background jobs"
   else
-    gem "solid_queue", github: "rails/solid_queue", branch: "main", comment: "Add Solid Queue for background jobs"
+    idempotent_gem "solid_queue", github: "rails/solid_queue", branch: "main", comment: "Add Solid Queue for background jobs"
   end
 
   # 2. install the gem
@@ -167,7 +177,7 @@ unless SKIP_SOLID_QUEUE
   end
 
   # 9. add the Solid Queue engine to the application
-  gem "mission_control-jobs", "~> 0.3", comment: "Add a web UI for Solid Queue"
+  idempotent_gem "mission_control-jobs", "~> 0.3", comment: "Add a web UI for Solid Queue"
 
   # 10. mount the Solid Queue engine
   insert_into_file "config/routes.rb",  after: /^([ \t]*).*rails_health_check$/ do
@@ -191,9 +201,9 @@ end
 unless SKIP_SOLID_CACHE
   # 1. add the appropriate solid_cache gem version
   if AT_LEAST_RAILS_8
-    gem "solid_cache", "~> 0.7", comment: "Add Solid Cache as an Active Support cache store"
+    idempotent_gem "solid_cache", "~> 0.7", comment: "Add Solid Cache as an Active Support cache store"
   else
-    gem "solid_cache", github: "rails/solid_cache", branch: "main", comment: "Add Solid Cache as an Active Support cache store"
+    idempotent_gem "solid_cache", github: "rails/solid_cache", branch: "main", comment: "Add Solid Cache as an Active Support cache store"
   end
 
   # 2. install the gem
@@ -250,7 +260,7 @@ end
 # Add Litestream
 unless SKIP_LITESTREAM
   # 1. add the litestream gem
-  gem "litestream", "~> 0.10.0", comment: "Ensure all SQLite databases are backed up"
+  idempotent_gem "litestream", "~> 0.10.0", comment: "Ensure all SQLite databases are backed up"
 
   # 2. install the gem
   in_root do
