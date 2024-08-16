@@ -13,6 +13,7 @@ JOBS_CONTROLLER = ENV.fetch("JOBS_CONTROLLER", "AdminController").freeze
 
 SKIP_SOLID_CACHE = ENV.fetch("SKIP_SOLID_CACHE", false).freeze
 CACHE_DB = ENV.fetch("CACHE_DB", "cache").freeze
+SKIP_DEV_CACHE = ENV.fetch("SKIP_DEV_CACHE", false).freeze
 
 SKIP_LITESTREAM = ENV.fetch("SKIP_LITESTREAM", false).freeze
 
@@ -321,10 +322,8 @@ unless SKIP_SOLID_CACHE
   # 8. optionally enable the cache in development
   # NOTE: we run the command directly instead of via the `rails_command` helper
   # because that runs `bin/rails` through Ruby, which we can't test properly.
-  if yes?("Enable caching in development?")
-    in_root do
-      run  "bin/rails dev:cache"
-    end
+  if not SKIP_DEV_CACHE
+    run_or_error "bin/rails dev:cache"
   end
 end
 
