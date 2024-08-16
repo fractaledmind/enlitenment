@@ -1,6 +1,6 @@
 # En*lite*nment
 
-`enlitenment` is a [Rails application template script](https://guides.rubyonrails.org/rails_application_templates.html) that will automatically upgrade your application to production-ready. It leads you along the path to SQLite on Rails enlightenment.
+`enlitenment` is a [Rails application template script](https://guides.rubyonrails.org/rails_application_templates.html) that will lead you along the path to SQLite on Rails enlightenment.
 
 Achieving SQLite on Rails nirvana requires 4 critical pieces:
 
@@ -10,6 +10,9 @@ Achieving SQLite on Rails nirvana requires 4 critical pieces:
 4. properly configured [Litestream](https://github.com/fractaledmind/litestream-ruby) for backups
 
 The `enlitenment` script provides all 4 pieces, each carefully tuned to be production-ready.
+
+> [!IMPORTANT]
+> Testing the template script while it is private requires you copying the url from the web interface, which includes a `token` query param. Using the URL without that `token` query param results in a 404.
 
 ## Usage
 
