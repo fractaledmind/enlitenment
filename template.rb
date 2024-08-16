@@ -103,6 +103,17 @@ def file_includes?(path, check)
   content.include?(check)
 end
 
+def run_or_error(command, config = {})
+  result = in_root { run command, config }
+
+  if result
+    return true
+  else
+    say_status :error, "Failed to run `#{command}`. Resolve and try again", :red
+    exit 1
+  end
+end
+
 def add_gem(*args)
   name, *versions = args
   return if file_includes?("Gemfile", %Q{gem "#{name}"})
@@ -111,10 +122,8 @@ def add_gem(*args)
 end
 
 def bundle_install
-  in_root do
-    Bundler.with_unbundled_env do
-      run 'bundle install'
-    end
+  Bundler.with_unbundled_env do
+    run_or_error 'bundle install'
   end
 end
 
@@ -160,16 +169,12 @@ unless SKIP_SOLID_QUEUE
   # 5. run the Solid Queue installation generator
   # NOTE: we run the command directly instead of via the `generate` helper
   # because that doesn't allow passing arbitrary environment variables.
-  in_root do
-    run "bin/rails generate solid_queue:install", env: { "DATABASE" => QUEUE_DB }
-  end
+  run_or_error "bin/rails generate solid_queue:install", env: { "DATABASE" => QUEUE_DB }
 
   # 6. run the migrations for the new database
   # NOTE: we run the command directly instead of via the `rails_command` helper
   # because that runs `bin/rails` through Ruby, which we can't test properly.
-  in_root do
-    run "bin/rails db:migrate:#{QUEUE_DB}"
-  end
+  run_or_error "bin/rails db:migrate:#{QUEUE_DB}"
 
   # 7. configure the application to use Solid Queue in all environments with the new database
   # NOTE: `insert_into_file` with replacement text that contains regex backreferences will not be idempotent,
@@ -270,16 +275,12 @@ unless SKIP_SOLID_CACHE
   # 5. run the Solid Cache installation generator
   # NOTE: we run the command directly instead of via the `generate` helper
   # because that doesn't allow passing arbitrary environment variables.
-  in_root do
-    run "bin/rails generate solid_cache:install", env: { "DATABASE" => CACHE_DB }
-  end
+  run_or_error "bin/rails generate solid_cache:install", env: { "DATABASE" => CACHE_DB }
 
   # 6. run the migrations for the new database
   # NOTE: we run the command directly instead of via the `rails_command` helper
   # because that runs `bin/rails` through Ruby, which we can't test properly.
-  in_root do
-    run "bin/rails db:migrate:#{CACHE_DB}"
-  end
+  run_or_error "bin/rails db:migrate:#{CACHE_DB}"
 
   # 7. configure Solid Cache to use the new database
   # NOTE: this `gsub_file` call is idempotent because we are only finding and replacing plain strings.
@@ -308,9 +309,7 @@ unless SKIP_LITESTREAM
   # 3. run the Solid Cache installation generator
   # NOTE: we run the command directly instead of via the `rails_command` helper
   # because that runs `bin/rails` through Ruby, which we can't test properly.
-  in_root do
-    run "bin/rails generate litestream:install"
-  end
+  run_or_error "bin/rails generate litestream:install"
 
   # 4. add the Litestream plugin to Puma
   # NOTE: this `insert_into_file` call is idempotent because we are only inserting a plain string.
