@@ -118,7 +118,7 @@ end
 
 def add_gem(*args)
   name, *versions = args
-  return if file_includes?("Gemfile", %Q{gem "#{name}"})
+  return if file_includes?("Gemfile.lock", "    #{name}")
 
   gem(*args)
 end
