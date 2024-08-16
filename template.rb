@@ -16,6 +16,7 @@ CACHE_DB = ENV.fetch("CACHE_DB", "cache").freeze
 SKIP_DEV_CACHE = ENV.fetch("SKIP_DEV_CACHE", false).freeze
 
 SKIP_LITESTREAM = ENV.fetch("SKIP_LITESTREAM", false).freeze
+SKIP_LITESTREAM_CREDS = ENV.fetch("SKIP_LITESTREAM_CREDS", false).freeze
 
 # ------------------------------------------------------------------------------
 
@@ -351,22 +352,24 @@ unless SKIP_LITESTREAM
   end
 
   # 5. add the Litestream engine to the application
-  puts <<~MESSAGE
-    In order to use Litestream, you need to have an S3-compatible storage provider. You can use AWS S3, DigitalOcean Spaces, or any other provider that is compatible with the S3 API. Once you have a bucket created, you will need to provide the credentials to Litestream for this Rails app.
-  MESSAGE
-  if yes?("Do you want to configure Litestream with Rails' credentials?")
+  say_status :NOTE, "Litestream requires an S3-compatible storage provider, like AWS S3, DigitalOcean Spaces, Google Cloud Storage, etc.", :blue
+  if not SKIP_LITESTREAM_CREDS
     uncomment_lines "config/initializers/litestream.rb", /litestream_credentials/
 
-    puts <<~MESSAGE
+    say_status :NOTE, <<~MESSAGE, :blue
       Edit your application's credentials to store your bucket details with:
           bin/rails credentials:edit
-
-      You can confirm that everything is configured correctly by running and inspecting the output of the following command:
+      Supply the necessary credentials for your S3-compatible storage provider in the following format:
+          litestream:
+            replica_bucket: <your-bucket-name>
+            replica_key_id: <public-key>
+            replica_access_key: <private-key>
+      You can confirm that everything is configured correctly by validating the output of the following command:
           bin/rails litestream:env
     MESSAGE
   else
-    puts <<~MESSAGE
-      You can configure Litestream by editing the configuration file at config/initializers/litestream.rb
+    say_status :NOTE, <<~MESSAGE, :blue
+      You will need to configure Litestream by editing the configuration file at config/initializers/litestream.rb
     MESSAGE
   end
 end
