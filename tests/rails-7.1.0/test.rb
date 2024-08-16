@@ -118,7 +118,7 @@ class TestRails710 < TestCase
 
     assert_includes app.read("config/application.rb"), 'config.active_job.queue_adapter = :solid_queue'
     assert_includes app.read("config/application.rb"), 'config.solid_queue.connects_to = { database: { writing: :queue } }'
-    assert_includes app.read("config/application.rb"), 'config.mission_control.jobs.base_controller_class = "AdminController"'
+    assert_includes app.read("config/application.rb"), 'config.mission_control.jobs.base_controller_class = "MissionControl::BaseController"'
 
     assert_includes app.read("config/routes.rb"), 'mount MissionControl::Jobs::Engine, at: "/jobs"'
 
@@ -226,7 +226,7 @@ class TestRails710 < TestCase
           config.active_job.queue_adapter = :solid_queue
           config.solid_queue.connects_to = { database: { writing: :queue } }
           # Ensure authorization is enabled for the Solid Queue web UI
-          config.mission_control.jobs.base_controller_class = "AdminController"
+          config.mission_control.jobs.base_controller_class = "MissionControl::BaseController"
 
           # Fallback to English if translation key is missing
           config.i18n.fallbacks = true
