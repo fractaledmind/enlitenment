@@ -40,6 +40,9 @@ class DatabaseYAML
       next unless scalar.is_a?(Psych::Nodes::Scalar)
       next unless mapping.is_a?(Psych::Nodes::Mapping)
       next unless mapping.anchor.nil? || mapping.anchor.empty?
+      next if mapping.children.each_slice(2).any? do |key, value|
+        key.is_a?(Psych::Nodes::Scalar) && key.value == name && value.is_a?(Psych::Nodes::Alias) && value.anchor == name
+      end
 
       new_mapping = Psych::Nodes::Mapping.new
       if mapping.children.first.value == "<<" # 2-tiered environment
