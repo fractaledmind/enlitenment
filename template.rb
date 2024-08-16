@@ -16,6 +16,7 @@ CACHE_DB = ENV.fetch("CACHE_DB", "cache").freeze
 
 SKIP_LITESTREAM = ENV.fetch("SKIP_LITESTREAM", false).freeze
 
+# ------------------------------------------------------------------------------
 
 class DatabaseYAML
   COMMENTED_PROD_DATABASE = "# database: path/to/persistent/storage/production.sqlite3"
@@ -109,6 +110,14 @@ def add_gem(*args)
   gem(*args)
 end
 
+def bundle_install
+  in_root do
+    Bundler.with_unbundled_env do
+      run 'bundle install'
+    end
+  end
+end
+
 # ------------------------------------------------------------------------------
 
 # Ensure all SQLite connections are properly configured
@@ -127,9 +136,7 @@ unless SKIP_SOLID_QUEUE
   end
 
   # 2. install the gem
-  in_root do
-    Bundler.with_unbundled_env { run 'bundle install' }
-  end
+  bundle_install
 
   # 3. define the new database configuration
   database_yaml = DatabaseYAML.new path: File.expand_path("config/database.yml", destination_root)
@@ -239,9 +246,7 @@ unless SKIP_SOLID_CACHE
   end
 
   # 2. install the gem
-  in_root do
-    Bundler.with_unbundled_env { run 'bundle install' }
-  end
+  bundle_install
 
   # 3. define the new database configuration
   database_yaml = DatabaseYAML.new path: File.expand_path("config/database.yml", destination_root)
@@ -298,9 +303,7 @@ unless SKIP_LITESTREAM
   add_gem "litestream", "~> 0.10.0", comment: "Ensure all SQLite databases are backed up"
 
   # 2. install the gem
-  in_root do
-    Bundler.with_unbundled_env { run 'bundle install' }
-  end
+  bundle_install
 
   # 3. run the Solid Cache installation generator
   # NOTE: we run the command directly instead of via the `rails_command` helper
