@@ -227,9 +227,39 @@ unless SKIP_SOLID_QUEUE
     end
   end
 
+  jobs_controller = if JOBS_CONTROLLER.safe_constantize.nil?
+    say_status :warning, "The JOBS_CONTROLLER class `#{JOBS_CONTROLLER}` does not exist. Generating a basic secure controller instead.", :blue
+    create_file "app/controllers/mission_control/base_controller.rb", <<~RUBY
+      module MissionControl
+        mattr_writer :username
+        mattr_writer :password
+
+        class << self
+          # use method instead of attr_accessor to ensure
+          # this works if variable set after SolidErrors is loaded
+          def username
+            @username ||= ENV["MISSION_CONTROL_USERNAME"] || @@username
+          end
+
+          def password
+            @password ||= ENV["MISSION_CONTROL_PASSWORD"] || @@password
+          end
+        end
+
+        class BaseController < ActionController::Base
+          protect_from_forgery with: :exception
+
+          http_basic_authenticate_with name: MissionControl.username, password: MissionControl.password
+        end
+      end
+    RUBY
+    "MissionControl::BaseController"
+  else
+    JOBS_CONTROLLER
+  end
   # NOTE: `insert_into_file` with replacement text that contains regex backreferences will not be idempotent,
   # so we need to check if the line is already present before adding it.
-  configure_mission_control_jobs = %Q{config.mission_control.jobs.base_controller_class = "#{JOBS_CONTROLLER}"}
+  configure_mission_control_jobs = %Q{config.mission_control.jobs.base_controller_class = "#{jobs_controller}"}
   if not file_includes?("config/application.rb", configure_mission_control_jobs)
     insert_into_file "config/application.rb", after: /^([ \t]*)config.solid_queue.*$/ do
       [
