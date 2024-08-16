@@ -10,7 +10,6 @@ class DummyApp
   def initialize(root)
     @root = root
     @paths = {}
-    @contents = {}
   end
 
   def expand(path)
@@ -27,7 +26,7 @@ class DummyApp
   end
 
   def read(path)
-    @contents[path] ||= File.read(expand(path))
+    File.read(expand(path))
   end
 
   def exist?(path)
@@ -56,6 +55,17 @@ class TestCase < Minitest::Test
 
     def template_path
       @template_path ||= File.join(File.expand_path("."), "template.rb")
+    end
+
+    def fake_lockfile!
+      head = <<~TXT
+        GEM
+          remote: https://rubygems.org/
+          specs:
+      TXT
+      gemfile = app.read("Gemfile")
+      specs = gemfile.scan(/gem "(.*?)"/).map {|(it)| "    " + it}.join("\n")
+      app.write("Gemfile.lock", head + specs)
     end
 
     def re(string)

@@ -27,11 +27,9 @@ class TestRails800 < TestCase
     call_count = 0
     stdout = ""
 
-    Thor::LineEditor.stub :readline, "yes" do
-      Bundler.stub :with_unbundled_env, ->(*) { call_count += 1 } do
-        stdout, _stderr = capture_io do
-          apply_rails_template
-        end
+    Bundler.stub :with_unbundled_env, ->(*) { fake_lockfile!; call_count += 1 } do
+      stdout, _stderr = capture_io do
+        apply_rails_template
       end
     end
 
@@ -134,12 +132,10 @@ class TestRails800 < TestCase
     call_count = 0
     stdout = ""
 
-    Thor::LineEditor.stub :readline, "yes" do
-      Bundler.stub :with_unbundled_env, ->(*) { call_count += 1 } do
-        stdout, _stderr = capture_io do
-          apply_rails_template
-          apply_rails_template
-        end
+    Bundler.stub :with_unbundled_env, ->(*) { fake_lockfile!; call_count += 1 } do
+      stdout, _stderr = capture_io do
+        apply_rails_template
+        apply_rails_template
       end
     end
 
