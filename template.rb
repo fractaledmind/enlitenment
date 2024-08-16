@@ -336,7 +336,7 @@ unless SKIP_LITESTREAM
   # 2. install the gem
   bundle_install
 
-  # 3. run the Solid Cache installation generator
+  # 3. run the Litestream installation generator
   # NOTE: we run the command directly instead of via the `rails_command` helper
   # because that runs `bin/rails` through Ruby, which we can't test properly.
   run_or_error "bin/rails generate litestream:install"
