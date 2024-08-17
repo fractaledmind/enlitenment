@@ -240,11 +240,11 @@ unless SKIP_SOLID_QUEUE
           # use method instead of attr_accessor to ensure
           # this works if variable set after SolidErrors is loaded
           def username
-            @username ||= ENV["MISSION_CONTROL_USERNAME"] || @@username
+            @username ||= @@username || ENV.fetch("MISSION_CONTROL_USERNAME", "admin")
           end
 
           def password
-            @password ||= ENV["MISSION_CONTROL_PASSWORD"] || @@password
+            @password ||= @@password || ENV.fetch("MISSION_CONTROL_PASSWORD", SecureRandom.hex(16))
           end
         end
 
