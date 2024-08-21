@@ -131,6 +131,9 @@ end
 
 # ------------------------------------------------------------------------------
 
+# Ensure the sqlite3 gem is installed
+add_gem "sqlite3", "~> 2.0", comment: "Use SQLite as the database engine"
+
 # Ensure all SQLite connections are properly configured
 if AT_LEAST_RAILS_8
 else

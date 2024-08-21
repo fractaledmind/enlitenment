@@ -141,6 +141,8 @@ class TestRails710 < TestCase
 
     expected_gemfile = <<~RUBY
       source "https://rubygems.org"
+      # Use SQLite as the database engine
+      gem "sqlite3", "~> 2.0"
       # Ensure all SQLite connections are properly configured
       gem "activerecord-enhancedsqlite3-adapter", "~> 0.8.0"
       # Add Solid Queue for background jobs
