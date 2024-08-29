@@ -17,6 +17,8 @@ SKIP_DEV_CACHE = ENV.fetch("SKIP_DEV_CACHE", false).freeze
 
 SKIP_LITESTREAM = ENV.fetch("SKIP_LITESTREAM", false).freeze
 SKIP_LITESTREAM_CREDS = ENV.fetch("SKIP_LITESTREAM_CREDS", false).freeze
+LITESTREAM_ROUTE = ENV.fetch("LITESTREAM_ROUTE", "/litestream").freeze
+LITESTREAM_PASSWORD = ENV.fetch("LITESTREAM_PASSWORD", "lite$tr3am").freeze
 
 # ------------------------------------------------------------------------------
 
@@ -374,5 +376,31 @@ unless SKIP_LITESTREAM
     say_status :NOTE, <<~MESSAGE, :blue
       You will need to configure Litestream by editing the configuration file at config/initializers/litestream.rb
     MESSAGE
+  end
+
+  # 6. mount the Litestream engine
+  # NOTE: `insert_into_file` with replacement text that contains regex backreferences will not be idempotent,
+  # so we need to check if the line is already present before adding it.
+  mount_litestream_jobs = %Q{mount Litestream::Engine, at: "#{LITESTREAM_ROUTE}"}
+  if not file_includes?("config/routes.rb", mount_litestream_jobs)
+    insert_into_file "config/routes.rb",  after: /^([ \t]*).*rails_health_check$/ do
+      [
+        "",
+        "",
+        "\\1#{mount_litestream_jobs}"
+      ].join("\n")
+    end
+  end
+
+  # 7. Secure the Litestream dashboard
+  # NOTE: `insert_into_file` with plain replacement text will be idempotent.
+  insert_into_file "config/initializers/litestream.rb", before: "Litestream.configure" do
+    [
+      "# Ensure authorization is enabled for the Solid Queue web UI",
+      "Litestream.username = \"admin\"",
+      "Litestream.password = \"#{LITESTREAM_PASSWORD}\" # TODO: CHANGE THIS",
+      "",
+      "",
+    ].join("\n")
   end
 end
