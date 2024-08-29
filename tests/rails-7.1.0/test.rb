@@ -262,6 +262,8 @@ class TestRails710 < TestCase
 
         get "up" => "rails/health#show", as: :rails_health_check
 
+        mount Litestream::Engine, at: "/litestream"
+
         mount MissionControl::Jobs::Engine, at: "/jobs"
 
         root "welcome#show"
@@ -294,6 +296,10 @@ class TestRails710 < TestCase
       # config.replica_bucket becomes LITESTREAM_REPLICA_BUCKET
       # This allows you to configure Litestream using Rails encrypted credentials,
       # or some other mechanism where the values are only avaialble at runtime.
+
+      # Ensure authorization is enabled for the Solid Queue web UI
+      Litestream.username = "admin"
+      Litestream.password = "lite$tr3am" # TODO: CHANGE THIS
 
       Litestream.configure do |config|
         # An example of using Rails encrypted credentials to configure Litestream.
