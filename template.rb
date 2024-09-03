@@ -358,29 +358,7 @@ unless SKIP_LITESTREAM
     ].join("\n")
   end
 
-  # 5. add the Litestream engine to the application
-  say_status :NOTE, "Litestream requires an S3-compatible storage provider, like AWS S3, DigitalOcean Spaces, Google Cloud Storage, etc.", :blue
-  if not SKIP_LITESTREAM_CREDS
-    uncomment_lines "config/initializers/litestream.rb", /litestream_credentials/
-
-    say_status :NOTE, <<~MESSAGE, :blue
-      Edit your application's credentials to store your bucket details with:
-          bin/rails credentials:edit
-      Supply the necessary credentials for your S3-compatible storage provider in the following format:
-          litestream:
-            replica_bucket: <your-bucket-name>
-            replica_key_id: <public-key>
-            replica_access_key: <private-key>
-      You can confirm that everything is configured correctly by validating the output of the following command:
-          bin/rails litestream:env
-    MESSAGE
-  else
-    say_status :NOTE, <<~MESSAGE, :blue
-      You will need to configure Litestream by editing the configuration file at config/initializers/litestream.rb
-    MESSAGE
-  end
-
-  # 6. mount the Litestream engine
+  # 5. mount the Litestream engine
   # NOTE: `insert_into_file` with replacement text that contains regex backreferences will not be idempotent,
   # so we need to check if the line is already present before adding it.
   mount_litestream_jobs = %Q{mount Litestream::Engine, at: "#{LITESTREAM_ROUTE}"}
@@ -394,7 +372,7 @@ unless SKIP_LITESTREAM
     end
   end
 
-  # 7. Secure the Litestream dashboard
+  # 6. Secure the Litestream dashboard
   # NOTE: `insert_into_file` with plain replacement text will be idempotent.
   insert_into_file "config/initializers/litestream.rb", before: "Litestream.configure" do
     [
@@ -404,5 +382,29 @@ unless SKIP_LITESTREAM
       "",
       "",
     ].join("\n")
+  end
+
+  # 7. at the end of the Rails process, configure the Litestream engine
+  after_bundle do
+    say_status :NOTE, "Litestream requires an S3-compatible storage provider, like AWS S3, DigitalOcean Spaces, Google Cloud Storage, etc.", :blue
+    if not SKIP_LITESTREAM_CREDS
+      uncomment_lines "config/initializers/litestream.rb", /litestream_credentials/
+
+      say_status :NOTE, <<~MESSAGE, :blue
+        Edit your application's credentials to store your bucket details with:
+            bin/rails credentials:edit
+        Supply the necessary credentials for your S3-compatible storage provider in the following format:
+            litestream:
+              replica_bucket: <your-bucket-name>
+              replica_key_id: <public-key>
+              replica_access_key: <private-key>
+        You can confirm that everything is configured correctly by validating the output of the following command:
+            bin/rails litestream:env
+      MESSAGE
+    else
+      say_status :NOTE, <<~MESSAGE, :blue
+        You will need to configure Litestream by editing the configuration file at config/initializers/litestream.rb
+      MESSAGE
+    end
   end
 end
