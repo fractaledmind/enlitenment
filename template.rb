@@ -1,4 +1,5 @@
 require "psych"
+require "bundler"
 
 # internal constants for the template
 RAILS_GEM_VERSION = Gem::Version.new(Rails::VERSION::STRING).freeze
@@ -126,7 +127,7 @@ def add_gem(*args)
 end
 
 def bundle_install
-  Bundler.with_unbundled_env do
+  ::Bundler.with_unbundled_env do
     run_or_error 'bundle install'
   end
 end
