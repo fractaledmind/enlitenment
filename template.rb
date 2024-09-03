@@ -1,4 +1,5 @@
 require "psych"
+require "bundler"
 
 # internal constants for the template
 RAILS_GEM_VERSION = Gem::Version.new(Rails::VERSION::STRING).freeze
@@ -103,8 +104,9 @@ end
 
 def file_includes?(path, check)
   destination = File.expand_path(path, destination_root)
+  return false unless File.exist?(destination)
   content = File.read(destination)
-  content.include?(check)
+  check.is_a?(Regexp) ? content.match?(check) : content.include?(check)
 end
 
 def run_or_error(command, config = {})
@@ -121,12 +123,13 @@ end
 def add_gem(*args)
   name, *versions = args
   return if file_includes?("Gemfile.lock", "    #{name}")
+  return if file_includes?("Gemfile", /gem ['"]#{name}['"]/)
 
   gem(*args)
 end
 
 def bundle_install
-  Bundler.with_unbundled_env do
+  ::Bundler.with_unbundled_env do
     run_or_error 'bundle install'
   end
 end
@@ -137,8 +140,7 @@ end
 add_gem "sqlite3", "~> 2.0", comment: "Use SQLite as the database engine"
 
 # Ensure all SQLite connections are properly configured
-if AT_LEAST_RAILS_8
-else
+if not AT_LEAST_RAILS_8
   add_gem "activerecord-enhancedsqlite3-adapter", "~> 0.8.0", comment: "Ensure all SQLite connections are properly configured"
 end
 
@@ -146,7 +148,7 @@ end
 unless SKIP_SOLID_QUEUE
   # 1. add the appropriate solid_queue gem version
   if AT_LEAST_RAILS_8
-    add_gem "solid_queue", "~> 0.4", comment: "Add Solid Queue for background jobs"
+    add_gem "solid_queue", "~> 0.7", comment: "Add Solid Queue for background jobs"
   else
     add_gem "solid_queue", github: "rails/solid_queue", branch: "main", comment: "Add Solid Queue for background jobs"
   end
@@ -282,7 +284,7 @@ end
 unless SKIP_SOLID_CACHE
   # 1. add the appropriate solid_cache gem version
   if AT_LEAST_RAILS_8
-    add_gem "solid_cache", "~> 0.7", comment: "Add Solid Cache as an Active Support cache store"
+    add_gem "solid_cache", "~> 1.0", comment: "Add Solid Cache as an Active Support cache store"
   else
     add_gem "solid_cache", github: "rails/solid_cache", branch: "main", comment: "Add Solid Cache as an Active Support cache store"
   end
@@ -356,29 +358,7 @@ unless SKIP_LITESTREAM
     ].join("\n")
   end
 
-  # 5. add the Litestream engine to the application
-  say_status :NOTE, "Litestream requires an S3-compatible storage provider, like AWS S3, DigitalOcean Spaces, Google Cloud Storage, etc.", :blue
-  if not SKIP_LITESTREAM_CREDS
-    uncomment_lines "config/initializers/litestream.rb", /litestream_credentials/
-
-    say_status :NOTE, <<~MESSAGE, :blue
-      Edit your application's credentials to store your bucket details with:
-          bin/rails credentials:edit
-      Supply the necessary credentials for your S3-compatible storage provider in the following format:
-          litestream:
-            replica_bucket: <your-bucket-name>
-            replica_key_id: <public-key>
-            replica_access_key: <private-key>
-      You can confirm that everything is configured correctly by validating the output of the following command:
-          bin/rails litestream:env
-    MESSAGE
-  else
-    say_status :NOTE, <<~MESSAGE, :blue
-      You will need to configure Litestream by editing the configuration file at config/initializers/litestream.rb
-    MESSAGE
-  end
-
-  # 6. mount the Litestream engine
+  # 5. mount the Litestream engine
   # NOTE: `insert_into_file` with replacement text that contains regex backreferences will not be idempotent,
   # so we need to check if the line is already present before adding it.
   mount_litestream_jobs = %Q{mount Litestream::Engine, at: "#{LITESTREAM_ROUTE}"}
@@ -392,7 +372,7 @@ unless SKIP_LITESTREAM
     end
   end
 
-  # 7. Secure the Litestream dashboard
+  # 6. Secure the Litestream dashboard
   # NOTE: `insert_into_file` with plain replacement text will be idempotent.
   insert_into_file "config/initializers/litestream.rb", before: "Litestream.configure" do
     [
@@ -402,5 +382,29 @@ unless SKIP_LITESTREAM
       "",
       "",
     ].join("\n")
+  end
+
+  # 7. at the end of the Rails process, configure the Litestream engine
+  after_bundle do
+    say_status :NOTE, "Litestream requires an S3-compatible storage provider, like AWS S3, DigitalOcean Spaces, Google Cloud Storage, etc.", :blue
+    if not SKIP_LITESTREAM_CREDS
+      uncomment_lines "config/initializers/litestream.rb", /litestream_credentials/
+
+      say_status :NOTE, <<~MESSAGE, :blue
+        Edit your application's credentials to store your bucket details with:
+            bin/rails credentials:edit
+        Supply the necessary credentials for your S3-compatible storage provider in the following format:
+            litestream:
+              replica_bucket: <your-bucket-name>
+              replica_key_id: <public-key>
+              replica_access_key: <private-key>
+        You can confirm that everything is configured correctly by validating the output of the following command:
+            bin/rails litestream:env
+      MESSAGE
+    else
+      say_status :NOTE, <<~MESSAGE, :blue
+        You will need to configure Litestream by editing the configuration file at config/initializers/litestream.rb
+      MESSAGE
+    end
   end
 end
