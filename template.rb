@@ -138,8 +138,7 @@ end
 add_gem "sqlite3", "~> 2.0", comment: "Use SQLite as the database engine"
 
 # Ensure all SQLite connections are properly configured
-if AT_LEAST_RAILS_8
-else
+if not AT_LEAST_RAILS_8
   add_gem "activerecord-enhancedsqlite3-adapter", "~> 0.8.0", comment: "Ensure all SQLite connections are properly configured"
 end
 
