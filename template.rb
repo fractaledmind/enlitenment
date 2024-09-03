@@ -146,7 +146,7 @@ end
 unless SKIP_SOLID_QUEUE
   # 1. add the appropriate solid_queue gem version
   if AT_LEAST_RAILS_8
-    add_gem "solid_queue", "~> 0.4", comment: "Add Solid Queue for background jobs"
+    add_gem "solid_queue", "~> 0.7", comment: "Add Solid Queue for background jobs"
   else
     add_gem "solid_queue", github: "rails/solid_queue", branch: "main", comment: "Add Solid Queue for background jobs"
   end
