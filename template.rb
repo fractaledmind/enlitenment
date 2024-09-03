@@ -104,6 +104,7 @@ end
 
 def file_includes?(path, check)
   destination = File.expand_path(path, destination_root)
+  return false unless File.exist?(destination)
   content = File.read(destination)
   content.include?(check)
 end
