@@ -376,7 +376,7 @@ unless SKIP_LITESTREAM
   # NOTE: `insert_into_file` with plain replacement text will be idempotent.
   insert_into_file "config/initializers/litestream.rb", before: "Litestream.configure" do
     [
-      "# Ensure authorization is enabled for the Solid Queue web UI",
+      "# Ensure authorization is enabled for the Litestream web UI",
       "Litestream.username = \"admin\"",
       "Litestream.password = \"#{LITESTREAM_PASSWORD}\" # TODO: CHANGE THIS",
       "",
