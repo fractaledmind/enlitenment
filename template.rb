@@ -106,7 +106,7 @@ def file_includes?(path, check)
   destination = File.expand_path(path, destination_root)
   return false unless File.exist?(destination)
   content = File.read(destination)
-  content.include?(check)
+  check.is_a?(Regexp) ? content.match?(check) : content.include?(check)
 end
 
 def run_or_error(command, config = {})
@@ -123,6 +123,7 @@ end
 def add_gem(*args)
   name, *versions = args
   return if file_includes?("Gemfile.lock", "    #{name}")
+  return if file_includes?("Gemfile", /gem ['"]#{name}['"]/)
 
   gem(*args)
 end
