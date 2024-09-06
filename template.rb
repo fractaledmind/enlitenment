@@ -311,7 +311,7 @@ unless SKIP_SOLID_CACHE
   # 6. run the migrations for the new database
   # NOTE: we run the command directly instead of via the `rails_command` helper
   # because that runs `bin/rails` through Ruby, which we can't test properly.
-  run_or_error "bin/rails db:migrate:#{CACHE_DB}"
+  run_or_error "bin/rails db:prepare", env: { "DATABASE" => CACHE_DB }
 
   # 7. configure Solid Cache to use the new database
   # NOTE: this `gsub_file` call is idempotent because we are only finding and replacing plain strings.
