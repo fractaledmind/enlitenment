@@ -279,11 +279,7 @@ end
 # Add Solid Cache
 unless SKIP_SOLID_CACHE
   # 1. add the appropriate solid_cache gem version
-  if AT_LEAST_RAILS_8
-    add_gem "solid_cache", "~> 1.0", comment: "Add Solid Cache as an Active Support cache store"
-  else
-    add_gem "solid_cache", github: "rails/solid_cache", branch: "main", comment: "Add Solid Cache as an Active Support cache store"
-  end
+  add_gem "solid_cache", "~> 1.0", comment: "Add Solid Cache as an Active Support cache store"
 
   # 2. install the gem
   bundle_install
