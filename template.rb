@@ -330,7 +330,7 @@ end
 # Add Litestream
 unless SKIP_LITESTREAM
   # 1. add the litestream gem
-  add_gem "litestream", "~> 0.10.0", comment: "Ensure all SQLite databases are backed up"
+  add_gem "litestream", "~> 0.11.0", comment: "Ensure all SQLite databases are backed up"
 
   # 2. install the gem
   bundle_install
