@@ -185,7 +185,6 @@ unless SKIP_SOLID_QUEUE
   # NOTE: `insert_into_file` with replacement text that contains regex backreferences will not be idempotent,
   # so we need to check if the line is already present before adding it.
   configure_queue_adapter = "config.active_job.queue_adapter = :solid_queue"
-  configure_solid_queue = "config.solid_queue.connects_to = { database: { writing: :#{QUEUE_DB} } }"
   if not file_includes?("config/application.rb", configure_queue_adapter)
     insert_into_file "config/application.rb", after: /^([ \t]*)config.load_defaults.*$/ do
       [
@@ -196,6 +195,7 @@ unless SKIP_SOLID_QUEUE
       ].join("\n")
     end
   end
+  configure_solid_queue = "config.solid_queue.connects_to = { database: { writing: :#{QUEUE_DB} } }"
   if not file_includes?("config/application.rb", configure_solid_queue)
     insert_into_file "config/application.rb", after: /^([ \t]*)config.active_job.queue_adapter = :solid_queue.*$/ do
       [
