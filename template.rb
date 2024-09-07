@@ -323,6 +323,9 @@ unless SKIP_SOLID_CACHE
   gsub_file "config/solid_cache.yml",
             "database: <%= Rails.env %>",
             "database: #{CACHE_DB}"
+  gsub_file "config/solid_cache.yml",
+            "database: cache",
+            "database: #{CACHE_DB}"
 
   # 8. optionally enable the cache in development
   # NOTE: we run the command directly instead of via the `rails_command` helper
