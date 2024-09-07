@@ -389,7 +389,27 @@ unless SKIP_LITESTREAM
     ].join("\n")
   end
 
-  # 7. at the end of the Rails process, configure the Litestream engine
+  # 7. Add a recurring task to verify Litestream backups
+  old_dispatcher_entry = <<~YML
+    dispatchers:
+      - polling_interval: 1
+        batch_size: 500
+  YML
+  new_dispatcher_entry = <<~YML
+    dispatchers:
+      - polling_interval: 1
+        batch_size: 500
+        recurring_tasks:
+          periodic_litestream_backup_verfication_job:
+            class: Litestream::VerificationJob
+            args: []
+            schedule: every day at 1am EST
+  YML
+  gsub_file "config/solid_queue.yml",
+            old_dispatcher_entry,
+            new_dispatcher_entry
+
+  # 8. at the end of the Rails process, configure the Litestream engine
   after_bundle do
     say_status :NOTE, "Litestream requires an S3-compatible storage provider, like AWS S3, DigitalOcean Spaces, Google Cloud Storage, etc.", :blue
     if not SKIP_LITESTREAM_CREDS
