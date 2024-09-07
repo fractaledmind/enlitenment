@@ -23,7 +23,12 @@ LITESTREAM_PASSWORD = ENV.fetch("LITESTREAM_PASSWORD", "lite$tr3am").freeze
 
 # ------------------------------------------------------------------------------
 
+PUMA_FILE = "config/puma.rb".freeze
+APPLICATION_FILE = "config/application.rb".freeze
 DATABASE_FILE = "config/database.yml".freeze
+CACHE_FILE = "config/solid_cache.yml".freeze
+QUEUE_FILE = "config/solid_queue.yml".freeze
+
 class DatabaseYAML
   COMMENTED_PROD_DATABASE = "# database: path/to/persistent/storage/production.sqlite3"
   UNCOMMENTED_PROD_DATABASE = "database: path/to/persistent/storage/production.sqlite3"
@@ -350,7 +355,7 @@ unless SKIP_LITESTREAM
 
   # 4. add the Litestream plugin to Puma
   # NOTE: this `insert_into_file` call is idempotent because we are only inserting a plain string.
-  insert_into_file "config/puma.rb", after: "plugin :tmp_restart" do
+  insert_into_file PUMA_FILE, after: "plugin :tmp_restart" do
     [
       "",
       "# Allow puma to manage Litestream replication process",
