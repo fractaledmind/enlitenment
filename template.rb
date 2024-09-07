@@ -23,6 +23,7 @@ LITESTREAM_PASSWORD = ENV.fetch("LITESTREAM_PASSWORD", "lite$tr3am").freeze
 
 # ------------------------------------------------------------------------------
 
+DATABASE_FILE = "config/database.yml".freeze
 class DatabaseYAML
   COMMENTED_PROD_DATABASE = "# database: path/to/persistent/storage/production.sqlite3"
   UNCOMMENTED_PROD_DATABASE = "database: path/to/persistent/storage/production.sqlite3"
@@ -153,9 +154,9 @@ unless SKIP_SOLID_QUEUE
   bundle_install
 
   # 3. define the new database configuration
-  database_yaml = DatabaseYAML.new path: File.expand_path("config/database.yml", destination_root)
+  database_yaml = DatabaseYAML.new path: File.expand_path(DATABASE_FILE, destination_root)
   # NOTE: this `insert_into_file` call is idempotent because we are only inserting a plain string.
-  insert_into_file "config/database.yml",
+  insert_into_file DATABASE_FILE,
                    database_yaml.new_database(QUEUE_DB) + "\n",
                    after: database_yaml.database_def_regex("default"),
                    verbose: false
@@ -164,7 +165,7 @@ unless SKIP_SOLID_QUEUE
   # 4. add the new database configuration to all environments
   database_yaml.add_database(QUEUE_DB).each do |environment, old_environment_entry, new_environment_entry|
     # NOTE: this `gsub_file` call is idempotent because we are only finding and replacing plain strings.
-    gsub_file "config/database.yml",
+    gsub_file DATABASE_FILE,
               old_environment_entry,
               new_environment_entry,
               verbose: false
@@ -285,9 +286,9 @@ unless SKIP_SOLID_CACHE
   bundle_install
 
   # 3. define the new database configuration
-  database_yaml = DatabaseYAML.new path: File.expand_path("config/database.yml", destination_root)
+  database_yaml = DatabaseYAML.new path: File.expand_path(DATABASE_FILE, destination_root)
   # NOTE: this `insert_into_file` call is idempotent because we are only inserting a plain string.
-  insert_into_file "config/database.yml",
+  insert_into_file DATABASE_FILE,
                    database_yaml.new_database(CACHE_DB) + "\n",
                    after: database_yaml.database_def_regex(QUEUE_DB),
                    verbose: false
@@ -296,7 +297,7 @@ unless SKIP_SOLID_CACHE
   # 4. add the new database configuration to all environments
   database_yaml.add_database(CACHE_DB).each do |environment, old_environment_entry, new_environment_entry|
     # NOTE: this `gsub_file` call is idempotent because we are only finding and replacing plain strings.
-    gsub_file "config/database.yml",
+    gsub_file DATABASE_FILE,
               old_environment_entry,
               new_environment_entry,
               verbose: false
