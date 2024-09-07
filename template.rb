@@ -185,35 +185,39 @@ unless SKIP_SOLID_QUEUE
   # 7. configure the application to use Solid Queue in all environments with the new database
   # NOTE: `insert_into_file` with replacement text that contains regex backreferences will not be idempotent,
   # so we need to check if the line is already present before adding it.
-  configure_queue_adapter = "config.active_job.queue_adapter = :solid_queue"
-  if not file_includes?("config/application.rb", configure_queue_adapter)
-    insert_into_file "config/application.rb", after: /^([ \t]*)config.load_defaults.*$/ do
+  queue_adapter = "config.active_job.queue_adapter"
+  if not file_includes?(APPLICATION_FILE, queue_adapter)
+    insert_into_file APPLICATION_FILE, after: /^([ \t]*)config.load_defaults.*$/ do
       [
         "",
         "",
         "\\1# Use Solid Queue for background jobs",
-        "\\1#{configure_queue_adapter}"
+        "\\1#{queue_adapter} = :solid_queue",
       ].join("\n")
     end
   end
-  configure_solid_queue = "config.solid_queue.connects_to = { database: { writing: :#{QUEUE_DB} } }"
-  if not file_includes?("config/application.rb", configure_solid_queue)
-    insert_into_file "config/application.rb", after: /^([ \t]*)config.active_job.queue_adapter = :solid_queue.*$/ do
+
+  connects_to = "config.solid_errors.connects_to"
+  if not file_includes?(APPLICATION_FILE, connects_to)
+    insert_into_file APPLICATION_FILE, after: /^([ \t]*)#{Regexp.escape(queue_adapter)}.*$/ do
       [
         "",
-        "\\1#{configure_solid_queue}",
+        "\\1#{connects_to} = { database: { writing: :#{QUEUE_DB} } }",
       ].join("\n")
     end
   end
 
   # 8. add the Solid Queue plugin to Puma
   # NOTE: this `insert_into_file` call is idempotent because we are only inserting a plain string.
-  insert_into_file "config/puma.rb", after: "plugin :tmp_restart" do
-    [
-      "",
-      "# Allow puma to manage Solid Queue's supervisor process",
-      "plugin :solid_queue"
-    ].join("\n")
+  plugin = "plugin :solid_queue"
+  if not file_includes?(PUMA_FILE, plugin)
+    insert_into_file PUMA_FILE, after: "plugin :tmp_restart" do
+      [
+        "",
+        "# Allow puma to manage Solid Queue's supervisor process",
+        plugin
+      ].join("\n")
+    end
   end
 
   # 9. add the Solid Queue engine to the application
@@ -265,13 +269,13 @@ unless SKIP_SOLID_QUEUE
   end
   # NOTE: `insert_into_file` with replacement text that contains regex backreferences will not be idempotent,
   # so we need to check if the line is already present before adding it.
-  configure_mission_control_jobs = %Q{config.mission_control.jobs.base_controller_class = "#{jobs_controller}"}
-  if not file_includes?("config/application.rb", configure_mission_control_jobs)
-    insert_into_file "config/application.rb", after: /^([ \t]*)config.solid_queue.*$/ do
+  base_controller_class = "config.mission_control.jobs.base_controller_class"
+  if not file_includes?(APPLICATION_FILE, configure_mission_control_jobs)
+    insert_into_file APPLICATION_FILE, after: /^([ \t]*)#{Regexp.escape(connects_to)}.*$/ do
       [
         "",
         "\\1# Ensure authorization is enabled for the Solid Queue web UI",
-        "\\1#{configure_mission_control_jobs}",
+        "\\1#{base_controller_class} = \"#{jobs_controller}\"",
       ].join("\n")
     end
   end
