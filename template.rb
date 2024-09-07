@@ -371,7 +371,7 @@ unless SKIP_LITESTREAM
 
   # 6. Secure the Litestream dashboard
   # NOTE: `insert_into_file` with plain replacement text will be idempotent.
-  insert_into_file "config/initializers/litestream.rb", before: "Litestream.configure" do
+  insert_into_file "config/initializers/litestream.rb", before: "Rails.application.configure do" do
     [
       "# Ensure authorization is enabled for the Litestream web UI",
       "Litestream.username = \"admin\"",
