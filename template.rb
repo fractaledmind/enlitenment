@@ -21,6 +21,13 @@ SKIP_LITESTREAM_CREDS = ENV.fetch("SKIP_LITESTREAM_CREDS", false).freeze
 LITESTREAM_ROUTE = ENV.fetch("LITESTREAM_ROUTE", "/litestream").freeze
 LITESTREAM_PASSWORD = ENV.fetch("LITESTREAM_PASSWORD", "lite$tr3am").freeze
 
+SKIP_SOLID_ERRORS = ENV.fetch("SKIP_SOLID_ERRORS", false).freeze
+ERRORS_DB = ENV.fetch("ERRORS_DB", "errors").freeze
+ERRORS_ROUTE = ENV.fetch("ERRORS_ROUTE", "/errors").freeze
+ERRORS_EMAIL_FROM = ENV.fetch("ERRORS_EMAIL_FROM", "").freeze
+ERRORS_EMAIL_TO = ENV.fetch("ERRORS_EMAIL_TO", "").freeze
+ERRORS_PASSWORD = ENV.fetch("ERRORS_PASSWORD", "3rr0r$").freeze
+
 # ------------------------------------------------------------------------------
 
 PUMA_FILE = "config/puma.rb".freeze
@@ -430,6 +437,123 @@ unless SKIP_LITESTREAM
       say_status :NOTE, <<~MESSAGE, :blue
         You will need to configure Litestream by editing the configuration file at config/initializers/litestream.rb
       MESSAGE
+    end
+  end
+end
+
+# Add Solid Errors
+unless SKIP_SOLID_ERRORS
+  # 1. add the appropriate solid_errors gem version
+  add_gem "solid_errors", "~> 0.5", comment: "Add Solid Errors for error monitoring"
+
+  # 2. install the gem
+  bundle_install
+
+  # 3. define the new database configuration
+  database_yaml = DatabaseYAML.new path: File.expand_path(DATABASE_FILE, destination_root)
+  # NOTE: this `insert_into_file` call is idempotent because we are only inserting a plain string.
+  insert_into_file DATABASE_FILE,
+                  database_yaml.new_database(ERRORS_DB) + "\n",
+                  after: database_yaml.database_def_regex(CACHE_DB),
+                  verbose: false
+  say_status :def_db, "#{ERRORS_DB} (database.yml)"
+
+  # 4. add the new database configuration to all environments
+  database_yaml.add_database(ERRORS_DB).each do |environment, old_environment_entry, new_environment_entry|
+    # NOTE: this `gsub_file` call is idempotent because we are only finding and replacing plain strings.
+    gsub_file DATABASE_FILE,
+              old_environment_entry,
+              new_environment_entry,
+              verbose: false
+    say_status :add_db, "#{ERRORS_DB} -> #{environment} (database.yml)"
+  end
+
+  # 5. run the Solid Errors installation generator
+  # NOTE: we run the command directly instead of via the `generate` helper
+  # because that doesn't allow passing arbitrary environment variables.
+  run_or_error "bin/rails generate solid_errors:install", env: { "DATABASE" => ERRORS_DB }
+
+  # 6. run the migrations for the new database
+  # NOTE: we run the command directly instead of via the `rails_command` helper
+  # because that runs `bin/rails` through Ruby, which we can't test properly.
+  run_or_error "bin/rails db:migrate", env: { "DATABASE" => ERRORS_DB }
+
+  # 7. configure the application to use Solid Errors in all environments with the new database
+  # NOTE: `insert_into_file` with replacement text that contains regex backreferences will not be idempotent,
+  # so we need to check if the line is already present before adding it.
+  connects_to = "config.solid_errors.connects_to"
+  if not file_includes?(APPLICATION_FILE, connects_to)
+    insert_into_file APPLICATION_FILE, before: /^([ \t]*)end\nend$/ do
+      [
+        "",
+        "\\1\\1# Configure Solid Errors",
+        "\\1\\1#{connects_to} = { database: { writing: :#{ERRORS_DB} } }",
+        "",
+      ].join("\n")
+    end
+  end
+
+  send_emails = "config.solid_errors.send_emails"
+  if not file_includes?(APPLICATION_FILE, send_emails)
+    insert_into_file APPLICATION_FILE, after: /^([ \t]*)#{Regexp.escape(connects_to)}.*$/ do
+      [
+        "",
+        "\\1#{send_emails} = true",
+      ].join("\n")
+    end
+  end
+
+  email_from = "config.solid_errors.email_from"
+  if not file_includes?(APPLICATION_FILE, email_from)
+    insert_into_file APPLICATION_FILE, after: /^([ \t]*)#{Regexp.escape(send_emails)}.*$/ do
+      [
+        "",
+        "\\1#{email_from} = \"#{ERRORS_EMAIL_FROM}\"",
+      ].join("\n")
+    end
+  end
+
+  email_to = "config.solid_errors.email_to"
+  if not file_includes?(APPLICATION_FILE, email_to)
+    insert_into_file APPLICATION_FILE, after: /^([ \t]*)#{Regexp.escape(email_from)}.*$/ do
+      [
+        "",
+        "\\1#{email_to} = \"#{ERRORS_EMAIL_TO}\"",
+      ].join("\n")
+    end
+  end
+
+  username = "config.solid_errors.username"
+  if not file_includes?(APPLICATION_FILE, username)
+    insert_into_file APPLICATION_FILE, after: /^([ \t]*)#{Regexp.escape(email_to)}.*$/ do
+      [
+        "",
+        "\\1#{username} = Rails.application.credentials.dig(:solid_errors, :username)",
+      ].join("\n")
+    end
+  end
+
+  password = "config.solid_errors.password"
+  if not file_includes?(APPLICATION_FILE, password)
+    insert_into_file APPLICATION_FILE, after: /^([ \t]*)#{Regexp.escape(username)}.*$/ do
+      [
+        "",
+        "\\1#{password} = Rails.application.credentials.dig(:solid_errors, :password)",
+      ].join("\n")
+    end
+  end
+
+  # 8. mount the Solid Errors engine
+  # NOTE: `insert_into_file` with replacement text that contains regex backreferences will not be idempotent,
+  # so we need to check if the line is already present before adding it.
+  mount_solid_errors_engine = %Q{mount SolidErrors::Engine, at: "#{ERRORS_ROUTE}"}
+  if not file_includes?("config/routes.rb", mount_solid_errors_engine)
+    insert_into_file "config/routes.rb",  after: /^([ \t]*).*rails_health_check$/ do
+      [
+        "",
+        "",
+        "\\1#{mount_solid_errors_engine}"
+      ].join("\n")
     end
   end
 end
