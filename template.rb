@@ -357,7 +357,22 @@ unless SKIP_SOLID_CACHE
             "database: cache",
             "database: #{CACHE_DB}"
 
-  # 8. optionally enable the cache in development
+  # 8. configure Solid Cache as the cache store
+  # NOTE: `insert_into_file` with replacement text that contains regex backreferences will not be idempotent,
+  # so we need to check if the line is already present before adding it.
+  cache_store = "config.cache_store = :solid_cache_store"
+  if not file_includes?(CONFIGURATION_FILE, cache_store)
+    insert_into_file CONFIGURATION_FILE, after: CONFIGURATION_REGEX do
+      [
+        "",
+        "",
+        "\\1# Configure Solid Cache as the cache store",
+        "\\1#{cache_store}",
+      ].join("\n")
+    end
+  end
+
+  # 9. optionally enable the cache in development
   # NOTE: we run the command directly instead of via the `rails_command` helper
   # because that runs `bin/rails` through Ruby, which we can't test properly.
   if not SKIP_DEV_CACHE
