@@ -615,28 +615,53 @@ unless SKIP_SOLID_CABLE
   # 6. run the migrations for the new database
   # NOTE: we run the command directly instead of via the `rails_command` helper
   # because that runs `bin/rails` through Ruby, which we can't test properly.
-  run_or_error "bin/rails db:migrate", env: { "DATABASE" => CABLE_DB }
+  if INSTALL_INTO == "application"
+    run_or_error "bin/rails db:migrate", env: { "DATABASE" => CABLE_DB }
+  else
+    say_status :NOTE, "Be sure to run Solid Cable migrations in production", :blue
+  end
 
   # 7. configure the application to use Solid Cable in all environments with the new database
-  remove_file(CABLE_FILE)
-  create_file(CABLE_FILE, <<~YAML)
-    default: &default
-      adapter: solid_cable
-      polling_interval: 1.second
-      keep_messages_around_for: 1.day
-      connects_to:
-        database:
-          writing: cable
+  if INSTALL_INTO == "application"
+    remove_file(CABLE_FILE)
+    create_file(CABLE_FILE, <<~YAML)
+      default: &default
+        adapter: solid_cable
+        polling_interval: 1.second
+        keep_messages_around_for: 1.day
+        connects_to:
+          database:
+            writing: #{CABLE_DB}
 
-    development:
-      <<: *default
-      silence_polling: true
+      development:
+        <<: *default
+        silence_polling: true
 
-    test:
-      <<: *default
+      test:
+        <<: *default
 
-    production:
-      <<: *default
-      polling_interval: 0.1.seconds
-  YAML
+      production:
+        <<: *default
+        polling_interval: 0.1.seconds
+    YAML
+  else
+    old_production_cable_config = <<~YAML
+      production:
+        adapter: redis
+        url: <%%= ENV.fetch("REDIS_URL") { "redis://localhost:6379/1" } %>
+        channel_prefix: <%= app_name %>_production
+    YAML
+    new_production_cable_config = <<~YAML
+      production:
+        adapter: solid_cable
+        connects_to:
+          database:
+            writing: #{CABLE_DB}
+        polling_interval: 0.1.seconds
+        keep_messages_around_for: 1.day
+    YAML
+    gsub_file("config/cable.yml",
+                  old_production_cable_config,
+                  new_production_cable_config)
+  end
 end
