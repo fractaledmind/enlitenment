@@ -187,6 +187,8 @@ unless SKIP_SOLID_QUEUE
 
   # 4. add the new database configuration to all environments
   database_yaml.add_database(QUEUE_DB).each do |environment, old_environment_entry, new_environment_entry|
+    next if INSTALL_INTO != "application" and environment != "production"
+
     # NOTE: this `gsub_file` call is idempotent because we are only finding and replacing plain strings.
     gsub_file DATABASE_FILE,
               old_environment_entry,
@@ -323,6 +325,8 @@ unless SKIP_SOLID_CACHE
 
   # 4. add the new database configuration to all environments
   database_yaml.add_database(CACHE_DB).each do |environment, old_environment_entry, new_environment_entry|
+    next if INSTALL_INTO != "application" and environment != "production"
+
     # NOTE: this `gsub_file` call is idempotent because we are only finding and replacing plain strings.
     gsub_file DATABASE_FILE,
               old_environment_entry,
@@ -471,6 +475,8 @@ unless SKIP_SOLID_ERRORS
 
   # 4. add the new database configuration to all environments
   database_yaml.add_database(ERRORS_DB).each do |environment, old_environment_entry, new_environment_entry|
+    next if INSTALL_INTO != "application" and environment != "production"
+
     # NOTE: this `gsub_file` call is idempotent because we are only finding and replacing plain strings.
     gsub_file DATABASE_FILE,
               old_environment_entry,
@@ -588,6 +594,8 @@ unless SKIP_SOLID_CABLE
 
   # 4. add the new database configuration to all environments
   database_yaml.add_database(CABLE_DB).each do |environment, old_environment_entry, new_environment_entry|
+    next if INSTALL_INTO != "application" and environment != "production"
+
     # NOTE: this `gsub_file` call is idempotent because we are only finding and replacing plain strings.
     gsub_file DATABASE_FILE,
               old_environment_entry,
