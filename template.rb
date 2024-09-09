@@ -39,6 +39,7 @@ DATABASE_FILE = "config/database.yml".freeze
 ROUTES_FILE = "config/routes.rb".freeze
 CACHE_FILE = (AT_LEAST_RAILS_8 ? "config/cache.yml" : "config/solid_cache.yml").freeze
 QUEUE_FILE = (AT_LEAST_RAILS_8 ? "config/queue.yml" : "config/solid_queue.yml").freeze
+CABLE_FILE = "config/cable.yml".freeze
 LITESTREAM_FILE = "config/initializers/litestream.rb".freeze
 
 class DatabaseYAML
@@ -337,10 +338,10 @@ unless SKIP_SOLID_CACHE
 
   # 7. configure Solid Cache to use the new database
   # NOTE: this `gsub_file` call is idempotent because we are only finding and replacing plain strings.
-  gsub_file "config/solid_cache.yml",
+  gsub_file CACHE_FILE,
             "database: <%= Rails.env %>",
             "database: #{CACHE_DB}"
-  gsub_file "config/solid_cache.yml",
+  gsub_file CACHE_FILE,
             "database: cache",
             "database: #{CACHE_DB}"
 
@@ -417,7 +418,7 @@ unless SKIP_LITESTREAM
             args: []
             schedule: every day at 1am EST
   YML
-  gsub_file "config/solid_queue.yml",
+  gsub_file QUEUE_FILE,
             old_dispatcher_entry,
             new_dispatcher_entry
 
