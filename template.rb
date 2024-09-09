@@ -45,6 +45,9 @@ QUEUE_FILE = (AT_LEAST_RAILS_8 ? "config/queue.yml" : "config/solid_queue.yml").
 CABLE_FILE = "config/cable.yml".freeze
 LITESTREAM_FILE = "config/initializers/litestream.rb".freeze
 
+APPLICATION_REGEX = /^([ \t]*).*?(?=\n\s*end\nend)$/
+PRODUCTION_REGEX = /^([ \t]*).*?(?=\nend)$/
+CONFIGURATION_REGEX = INSTALL_INTO == "application" ? APPLICATION_REGEX : PRODUCTION_REGEX
 CONFIGURATION_FILE = INSTALL_INTO == "application" ? APPLICATION_FILE : PRODUCTION_FILE
 
 class DatabaseYAML
@@ -212,7 +215,7 @@ unless SKIP_SOLID_QUEUE
   # so we need to check if the line is already present before adding it.
   queue_adapter = "config.active_job.queue_adapter"
   if not file_includes?(CONFIGURATION_FILE, queue_adapter)
-    insert_into_file CONFIGURATION_FILE, after: /^([ \t]*).*?(?=\n\s*end)+$/ do
+    insert_into_file CONFIGURATION_FILE, after: CONFIGURATION_REGEX do
       [
         "",
         "",
@@ -500,7 +503,7 @@ unless SKIP_SOLID_ERRORS
   # so we need to check if the line is already present before adding it.
   connects_to = "config.solid_errors.connects_to"
   if not file_includes?(CONFIGURATION_FILE, connects_to)
-    insert_into_file CONFIGURATION_FILE, after: /^([ \t]*).*?(?=\n\s*end)+$/ do
+    insert_into_file CONFIGURATION_FILE, after: CONFIGURATION_REGEX do
       [
         "",
         "",
