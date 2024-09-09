@@ -38,6 +38,7 @@ APPLICATION_FILE = "config/application.rb".freeze
 DATABASE_FILE = "config/database.yml".freeze
 CACHE_FILE = "config/solid_cache.yml".freeze
 QUEUE_FILE = "config/solid_queue.yml".freeze
+ROUTES_FILE = "config/routes.rb".freeze
 
 class DatabaseYAML
   COMMENTED_PROD_DATABASE = "# database: path/to/persistent/storage/production.sqlite3"
@@ -242,8 +243,8 @@ unless SKIP_SOLID_QUEUE
   # NOTE: `insert_into_file` with replacement text that contains regex backreferences will not be idempotent,
   # so we need to check if the line is already present before adding it.
   mount_mission_control_jobs = %Q{mount MissionControl::Jobs::Engine, at: "#{JOBS_ROUTE}"}
-  if not file_includes?("config/routes.rb", mount_mission_control_jobs)
-    insert_into_file "config/routes.rb",  after: /^([ \t]*).*rails_health_check$/ do
+  if not file_includes?(ROUTES_FILE, mount_mission_control_jobs)
+    insert_into_file ROUTES_FILE,  after: /^([ \t]*).*rails_health_check$/ do
       [
         "",
         "",
@@ -377,8 +378,8 @@ unless SKIP_LITESTREAM
   # NOTE: `insert_into_file` with replacement text that contains regex backreferences will not be idempotent,
   # so we need to check if the line is already present before adding it.
   mount_litestream_jobs = %Q{mount Litestream::Engine, at: "#{LITESTREAM_ROUTE}"}
-  if not file_includes?("config/routes.rb", mount_litestream_jobs)
-    insert_into_file "config/routes.rb",  after: /^([ \t]*).*rails_health_check$/ do
+  if not file_includes?(ROUTES_FILE, mount_litestream_jobs)
+    insert_into_file ROUTES_FILE,  after: /^([ \t]*).*rails_health_check$/ do
       [
         "",
         "",
@@ -550,8 +551,8 @@ unless SKIP_SOLID_ERRORS
   # NOTE: `insert_into_file` with replacement text that contains regex backreferences will not be idempotent,
   # so we need to check if the line is already present before adding it.
   mount_solid_errors_engine = %Q{mount SolidErrors::Engine, at: "#{ERRORS_ROUTE}"}
-  if not file_includes?("config/routes.rb", mount_solid_errors_engine)
-    insert_into_file "config/routes.rb",  after: /^([ \t]*).*rails_health_check$/ do
+  if not file_includes?(ROUTES_FILE, mount_solid_errors_engine)
+    insert_into_file ROUTES_FILE,  after: /^([ \t]*).*rails_health_check$/ do
       [
         "",
         "",
