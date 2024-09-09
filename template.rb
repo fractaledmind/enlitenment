@@ -36,9 +36,9 @@ CABLE_DB = ENV.fetch("CABLE_DB", "cable").freeze
 PUMA_FILE = "config/puma.rb".freeze
 APPLICATION_FILE = "config/application.rb".freeze
 DATABASE_FILE = "config/database.yml".freeze
-CACHE_FILE = "config/solid_cache.yml".freeze
-QUEUE_FILE = "config/solid_queue.yml".freeze
 ROUTES_FILE = "config/routes.rb".freeze
+CACHE_FILE = (AT_LEAST_RAILS_8 ? "config/cache.yml" : "config/solid_cache.yml").freeze
+QUEUE_FILE = (AT_LEAST_RAILS_8 ? "config/queue.yml" : "config/solid_queue.yml").freeze
 
 class DatabaseYAML
   COMMENTED_PROD_DATABASE = "# database: path/to/persistent/storage/production.sqlite3"
