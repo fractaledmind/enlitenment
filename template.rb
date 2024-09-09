@@ -476,7 +476,7 @@ end
 
 # Add Solid Errors
 unless SKIP_SOLID_ERRORS
-  # 1. add the appropriate solid_errors gem version
+  # 1. add the solid_errors gem
   add_gem "solid_errors", "~> 0.5", comment: "Add Solid Errors for error monitoring"
 
   # 2. install the gem
@@ -508,7 +508,7 @@ unless SKIP_SOLID_ERRORS
   # because that doesn't allow passing arbitrary environment variables.
   run_or_error "bin/rails generate solid_errors:install", env: { "DATABASE" => ERRORS_DB }
 
-  # 6. run the migrations for the new database
+  # 6. prepare the new database
   # NOTE: we run the command directly instead of via the `rails_command` helper
   # because that runs `bin/rails` through Ruby, which we can't test properly.
   run_or_error "bin/rails db:prepare", env: { "DATABASE" => ERRORS_DB }
@@ -528,6 +528,7 @@ unless SKIP_SOLID_ERRORS
     end
   end
 
+  # 8. configure Solid Errors to send emails when errors occur
   send_emails = "config.solid_errors.send_emails"
   if not file_includes?(CONFIGURATION_FILE, send_emails)
     insert_into_file CONFIGURATION_FILE, after: /^([ \t]*)#{Regexp.escape(connects_to)}.*$/ do
@@ -558,6 +559,21 @@ unless SKIP_SOLID_ERRORS
     end
   end
 
+  # 9. mount the Solid Errors engine
+  # NOTE: `insert_into_file` with replacement text that contains regex backreferences will not be idempotent,
+  # so we need to check if the line is already present before adding it.
+  mount_solid_errors_engine = %Q{mount SolidErrors::Engine, at: "#{ERRORS_ROUTE}"}
+  if not file_includes?(ROUTES_FILE, mount_solid_errors_engine)
+    insert_into_file ROUTES_FILE,  after: /^([ \t]*).*rails_health_check$/ do
+      [
+        "",
+        "",
+        "\\1#{mount_solid_errors_engine}"
+      ].join("\n")
+    end
+  end
+
+  # 10. secure the Solid Errors web dashboard
   username = "config.solid_errors.username"
   if not file_includes?(CONFIGURATION_FILE, username)
     insert_into_file CONFIGURATION_FILE, after: /^([ \t]*)#{Regexp.escape(email_to)}.*$/ do
@@ -574,20 +590,6 @@ unless SKIP_SOLID_ERRORS
       [
         "",
         "\\1#{password} = Rails.application.credentials.dig(:solid_errors, :password)",
-      ].join("\n")
-    end
-  end
-
-  # 8. mount the Solid Errors engine
-  # NOTE: `insert_into_file` with replacement text that contains regex backreferences will not be idempotent,
-  # so we need to check if the line is already present before adding it.
-  mount_solid_errors_engine = %Q{mount SolidErrors::Engine, at: "#{ERRORS_ROUTE}"}
-  if not file_includes?(ROUTES_FILE, mount_solid_errors_engine)
-    insert_into_file ROUTES_FILE,  after: /^([ \t]*).*rails_health_check$/ do
-      [
-        "",
-        "",
-        "\\1#{mount_solid_errors_engine}"
       ].join("\n")
     end
   end
