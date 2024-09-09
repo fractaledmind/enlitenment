@@ -496,7 +496,7 @@ unless SKIP_SOLID_ERRORS
   # 6. run the migrations for the new database
   # NOTE: we run the command directly instead of via the `rails_command` helper
   # because that runs `bin/rails` through Ruby, which we can't test properly.
-  run_or_error "bin/rails db:migrate", env: { "DATABASE" => ERRORS_DB }
+  run_or_error "bin/rails db:prepare", env: { "DATABASE" => ERRORS_DB }
 
   # 7. configure the application to use Solid Errors in all environments with the new database
   # NOTE: `insert_into_file` with replacement text that contains regex backreferences will not be idempotent,
