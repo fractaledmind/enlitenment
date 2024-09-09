@@ -7,6 +7,8 @@ RAILS_8_VERSION = Gem::Version.new("8.0.0").freeze
 AT_LEAST_RAILS_8 = RAILS_GEM_VERSION.release >= RAILS_8_VERSION
 
 # user-configurable constants for the template
+INSTALL_INTO = ENV.fetch("INSTALL_INTO", "production").freeze
+
 SKIP_SOLID_QUEUE = ENV.fetch("SKIP_SOLID_QUEUE", false).freeze
 QUEUE_DB = ENV.fetch("QUEUE_DB", "queue").freeze
 JOBS_ROUTE = ENV.fetch("JOBS_ROUTE", "/jobs").freeze
@@ -35,12 +37,15 @@ CABLE_DB = ENV.fetch("CABLE_DB", "cable").freeze
 
 PUMA_FILE = "config/puma.rb".freeze
 APPLICATION_FILE = "config/application.rb".freeze
+PRODUCTION_FILE = "config/environments/production.rb".freeze
 DATABASE_FILE = "config/database.yml".freeze
 ROUTES_FILE = "config/routes.rb".freeze
 CACHE_FILE = (AT_LEAST_RAILS_8 ? "config/cache.yml" : "config/solid_cache.yml").freeze
 QUEUE_FILE = (AT_LEAST_RAILS_8 ? "config/queue.yml" : "config/solid_queue.yml").freeze
 CABLE_FILE = "config/cable.yml".freeze
 LITESTREAM_FILE = "config/initializers/litestream.rb".freeze
+
+CONFIGURATION_FILE = INSTALL_INTO == "application" ? APPLICATION_FILE : PRODUCTION_FILE
 
 class DatabaseYAML
   COMMENTED_PROD_DATABASE = "# database: path/to/persistent/storage/production.sqlite3"
@@ -204,8 +209,8 @@ unless SKIP_SOLID_QUEUE
   # NOTE: `insert_into_file` with replacement text that contains regex backreferences will not be idempotent,
   # so we need to check if the line is already present before adding it.
   queue_adapter = "config.active_job.queue_adapter"
-  if not file_includes?(APPLICATION_FILE, queue_adapter)
-    insert_into_file APPLICATION_FILE, after: /^([ \t]*)config.load_defaults.*$/ do
+  if not file_includes?(CONFIGURATION_FILE, queue_adapter)
+    insert_into_file CONFIGURATION_FILE, after: /^([ \t]*).*?(?=\n\s*end)+$/ do
       [
         "",
         "",
@@ -215,9 +220,9 @@ unless SKIP_SOLID_QUEUE
     end
   end
 
-  connects_to = "config.solid_errors.connects_to"
-  if not file_includes?(APPLICATION_FILE, connects_to)
-    insert_into_file APPLICATION_FILE, after: /^([ \t]*)#{Regexp.escape(queue_adapter)}.*$/ do
+  connects_to = "config.solid_queue.connects_to"
+  if not file_includes?(CONFIGURATION_FILE, connects_to)
+    insert_into_file CONFIGURATION_FILE, after: /^([ \t]*)#{Regexp.escape(queue_adapter)}.*$/ do
       [
         "",
         "\\1#{connects_to} = { database: { writing: :#{QUEUE_DB} } }",
@@ -288,8 +293,8 @@ unless SKIP_SOLID_QUEUE
   # NOTE: `insert_into_file` with replacement text that contains regex backreferences will not be idempotent,
   # so we need to check if the line is already present before adding it.
   base_controller_class = "config.mission_control.jobs.base_controller_class"
-  if not file_includes?(APPLICATION_FILE, configure_mission_control_jobs)
-    insert_into_file APPLICATION_FILE, after: /^([ \t]*)#{Regexp.escape(connects_to)}.*$/ do
+  if not file_includes?(CONFIGURATION_FILE, base_controller_class)
+    insert_into_file CONFIGURATION_FILE, after: /^([ \t]*)#{Regexp.escape(connects_to)}.*$/ do
       [
         "",
         "\\1# Ensure authorization is enabled for the Solid Queue web UI",
@@ -488,20 +493,20 @@ unless SKIP_SOLID_ERRORS
   # NOTE: `insert_into_file` with replacement text that contains regex backreferences will not be idempotent,
   # so we need to check if the line is already present before adding it.
   connects_to = "config.solid_errors.connects_to"
-  if not file_includes?(APPLICATION_FILE, connects_to)
-    insert_into_file APPLICATION_FILE, before: /^([ \t]*)end\nend$/ do
+  if not file_includes?(CONFIGURATION_FILE, connects_to)
+    insert_into_file CONFIGURATION_FILE, after: /^([ \t]*).*?(?=\n\s*end)+$/ do
       [
         "",
-        "\\1\\1# Configure Solid Errors",
-        "\\1\\1#{connects_to} = { database: { writing: :#{ERRORS_DB} } }",
         "",
+        "\\1# Configure Solid Errors",
+        "\\1#{connects_to} = { database: { writing: :#{ERRORS_DB} } }",
       ].join("\n")
     end
   end
 
   send_emails = "config.solid_errors.send_emails"
-  if not file_includes?(APPLICATION_FILE, send_emails)
-    insert_into_file APPLICATION_FILE, after: /^([ \t]*)#{Regexp.escape(connects_to)}.*$/ do
+  if not file_includes?(CONFIGURATION_FILE, send_emails)
+    insert_into_file CONFIGURATION_FILE, after: /^([ \t]*)#{Regexp.escape(connects_to)}.*$/ do
       [
         "",
         "\\1#{send_emails} = true",
@@ -510,8 +515,8 @@ unless SKIP_SOLID_ERRORS
   end
 
   email_from = "config.solid_errors.email_from"
-  if not file_includes?(APPLICATION_FILE, email_from)
-    insert_into_file APPLICATION_FILE, after: /^([ \t]*)#{Regexp.escape(send_emails)}.*$/ do
+  if not file_includes?(CONFIGURATION_FILE, email_from)
+    insert_into_file CONFIGURATION_FILE, after: /^([ \t]*)#{Regexp.escape(send_emails)}.*$/ do
       [
         "",
         "\\1#{email_from} = \"#{ERRORS_EMAIL_FROM}\"",
@@ -520,8 +525,8 @@ unless SKIP_SOLID_ERRORS
   end
 
   email_to = "config.solid_errors.email_to"
-  if not file_includes?(APPLICATION_FILE, email_to)
-    insert_into_file APPLICATION_FILE, after: /^([ \t]*)#{Regexp.escape(email_from)}.*$/ do
+  if not file_includes?(CONFIGURATION_FILE, email_to)
+    insert_into_file CONFIGURATION_FILE, after: /^([ \t]*)#{Regexp.escape(email_from)}.*$/ do
       [
         "",
         "\\1#{email_to} = \"#{ERRORS_EMAIL_TO}\"",
@@ -530,8 +535,8 @@ unless SKIP_SOLID_ERRORS
   end
 
   username = "config.solid_errors.username"
-  if not file_includes?(APPLICATION_FILE, username)
-    insert_into_file APPLICATION_FILE, after: /^([ \t]*)#{Regexp.escape(email_to)}.*$/ do
+  if not file_includes?(CONFIGURATION_FILE, username)
+    insert_into_file CONFIGURATION_FILE, after: /^([ \t]*)#{Regexp.escape(email_to)}.*$/ do
       [
         "",
         "\\1#{username} = Rails.application.credentials.dig(:solid_errors, :username)",
@@ -540,8 +545,8 @@ unless SKIP_SOLID_ERRORS
   end
 
   password = "config.solid_errors.password"
-  if not file_includes?(APPLICATION_FILE, password)
-    insert_into_file APPLICATION_FILE, after: /^([ \t]*)#{Regexp.escape(username)}.*$/ do
+  if not file_includes?(CONFIGURATION_FILE, password)
+    insert_into_file CONFIGURATION_FILE, after: /^([ \t]*)#{Regexp.escape(username)}.*$/ do
       [
         "",
         "\\1#{password} = Rails.application.credentials.dig(:solid_errors, :password)",
