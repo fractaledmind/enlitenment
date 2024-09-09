@@ -39,6 +39,7 @@ DATABASE_FILE = "config/database.yml".freeze
 ROUTES_FILE = "config/routes.rb".freeze
 CACHE_FILE = (AT_LEAST_RAILS_8 ? "config/cache.yml" : "config/solid_cache.yml").freeze
 QUEUE_FILE = (AT_LEAST_RAILS_8 ? "config/queue.yml" : "config/solid_queue.yml").freeze
+LITESTREAM_FILE = "config/initializers/litestream.rb".freeze
 
 class DatabaseYAML
   COMMENTED_PROD_DATABASE = "# database: path/to/persistent/storage/production.sqlite3"
@@ -390,7 +391,7 @@ unless SKIP_LITESTREAM
 
   # 6. Secure the Litestream dashboard
   # NOTE: `insert_into_file` with plain replacement text will be idempotent.
-  insert_into_file "config/initializers/litestream.rb", before: "Rails.application.configure do" do
+  insert_into_file LITESTREAM_FILE, before: "Rails.application.configure do" do
     [
       "# Ensure authorization is enabled for the Litestream web UI",
       "Litestream.username = \"admin\"",
@@ -424,7 +425,7 @@ unless SKIP_LITESTREAM
   after_bundle do
     say_status :NOTE, "Litestream requires an S3-compatible storage provider, like AWS S3, DigitalOcean Spaces, Google Cloud Storage, etc.", :blue
     if not SKIP_LITESTREAM_CREDS
-      uncomment_lines "config/initializers/litestream.rb", /litestream_credentials/
+      uncomment_lines LITESTREAM_FILE, /litestream_credentials/
 
       say_status :NOTE, <<~MESSAGE, :blue
         Edit your application's credentials to store your bucket details with:
