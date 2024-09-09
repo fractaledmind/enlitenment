@@ -174,6 +174,19 @@ But, to ensure that the generated code is secure by default, the script provides
 
 For the `JOBS_CONTROLLER` in particular, if you do not have an `AdminController` defined in your project, the script will instead generate a `MissionControl::BaseController` for you with HTTP basic authentication enabled. This is simply to ensure that you cannot accidently expose the Mission Control dashboard to the public.
 
+## Solid Gems
+
+If you want to confirm that the Solid gems have been installed and configured correctly, you can run the following commands in the Rails console and verify that the output matches the following:
+
+```
+> ActionCable.server.config.cable['adapter']
+=> "solid_cable"
+> Rails.application.config.cache_store
+=> :solid_cache_store
+> Rails.application.config.active_job.queue_adapter
+=> :solid_queue
+```
+
 ## Reporting issues
 
 If you run into issues running the script, please [open an issue](https://github.com/fractaledmind/enlitenment/issues/new). When detailing your problem, please ensure that you provide the (relevant) contents of the following files as they were **before** you ran the script:
