@@ -7,9 +7,10 @@ Achieving SQLite on Rails nirvana requires 4 critical pieces:
 1. properly configured SQLite connections for [optimal performance](https://fractaledmind.github.io/2024/04/15/sqlite-on-rails-the-how-and-why-of-optimal-performance/)
 2. properly configured [Solid Queue](https://github.com/rails/solid_queue) for background jobs
 3. properly configured [Solid Cache](https://github.com/rails/solid_cache) for caching
-4. properly configured [Litestream](https://github.com/fractaledmind/litestream-ruby) for backups
-5. properly configured [Solid Errors](https://github.com/fractaledmind/solid_errors) for error monitoring
-6. properly configured [Solid Cable](https://github.com/npezza93/solid_cable) for web sockets
+4. properly configured [Solid Cable](https://github.com/rails/solid_cable) for web sockets
+5. properly configured [Litestream](https://github.com/fractaledmind/litestream-ruby) for backups
+6. properly configured [Solid Errors](https://github.com/fractaledmind/solid_errors) for error monitoring
+
 
 The `enlitenment` script provides all 6 pieces, each carefully tuned to be production-ready.
 
@@ -57,9 +58,9 @@ You can skip certain sections of the script using the `SKIP_*` environment varia
 | :---                    | :---:   |
 | `SKIP_SOLID_QUEUE`      | `false` |
 | `SKIP_SOLID_CACHE`      | `false` |
+| `SKIP_SOLID_CABLE`      | `false` |
 | `SKIP_LITESTREAM`       | `false` |
 | `SKIP_SOLID_ERRORS`     | `false` |
-| `SKIP_SOLID_CABLE`      | `false` |
 
 `SKIP_SOLID_QUEUE` will skip the entire process of installing and configuring [Solid Queue](https://github.com/rails/solid_queue). This process consists of 10 steps, which would all be skipped if you set this variable to `true`:
 
@@ -86,6 +87,16 @@ You can skip certain sections of the script using the `SKIP_*` environment varia
 8. configure Solid Cache as the cache store
 9. optionally enable the cache in development
 
+`SKIP_SOLID_CABLE` will skip the entire process of installing and configuring [Solid Cable](https://github.com/rails/solid_cable). This process consists of 7 steps, which would all be skipped if you set this variable to `true`:
+
+1. add the `solid_cable` gem to the Gemfile
+2. install the gem
+3. define the new database configuration
+4. add the new database configuration to all environments
+5. run the Solid Cable installation generator
+6. run the migrations for the new database
+7. configure Solid Cable to use the new database
+
 `SKIP_LITESTREAM` will skip the entire process of installing and configuring [Litestream](https://github.com/fractaledmind/litestream-ruby). This process consists of 8 steps, which would all be skipped if you set this variable to `true`:
 
 1. add the `litestream` gem
@@ -110,16 +121,6 @@ You can skip certain sections of the script using the `SKIP_*` environment varia
 9. mount the Solid Errors engine
 10. secure the Solid Errors web dashboard
 
-`SKIP_SOLID_CABLE` will skip the entire process of installing and configuring [Solid Cable](https://github.com/npezza93/solid_cable). This process consists of 7 steps, which would all be skipped if you set this variable to `true`:
-
-1. add the `solid_cable` gem to the Gemfile
-2. install the gem
-3. define the new database configuration
-4. add the new database configuration to all environments
-5. run the Solid Cable installation generator
-6. run the migrations for the new database
-7. configure Solid Cable to use the new database
-
 #### Skipping Steps
 
 For some sections, there are also certain individual steps that can be skipped:
@@ -139,8 +140,8 @@ When installing and configuring Solid Queue and Solid Cache, `enlitenment` will 
 | :---        | :---:      |
 | `QUEUE_DB`  | `"queue"`  |
 | `CACHE_DB`  | `"cache"`  |
-| `ERRORS_DB` | `"errors"` |
 | `CABLE_DB`  | `"cable"`  |
+| `ERRORS_DB` | `"errors"` |
 
 These database names will be used in the `config/database.yml` file to define the new database configurations as well as in the Solid Queue/Cache/Cable/Errors configuration files to ensure that both gems understand that they are supposed to read and write from these separate SQLite databases.
 

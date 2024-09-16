@@ -380,6 +380,94 @@ unless SKIP_SOLID_CACHE
   end
 end
 
+# Add Solid Cable
+unless SKIP_SOLID_CABLE
+  # 1. add the appropriate solid_errors gem version
+  add_gem "solid_cable", "~> 1.0", comment: "Add Solid Cable for web sockets"
+
+  # 2. install the gem
+  bundle_install
+
+  # 3. define the new database configuration
+  database_yaml = DatabaseYAML.new path: File.expand_path(DATABASE_FILE, destination_root)
+  # NOTE: this `insert_into_file` call is idempotent because we are only inserting a plain string.
+  insert_into_file DATABASE_FILE,
+                  database_yaml.new_database(CABLE_DB) + "\n",
+                  after: database_yaml.database_def_regex(ERRORS_DB),
+                  verbose: false
+  say_status :def_db, "#{CABLE_DB} (database.yml)"
+
+  # 4. add the new database configuration to all environments
+  database_yaml.add_database(CABLE_DB).each do |environment, old_environment_entry, new_environment_entry|
+    next if INSTALL_INTO != "application" and environment != "production"
+
+    # NOTE: this `gsub_file` call is idempotent because we are only finding and replacing plain strings.
+    gsub_file DATABASE_FILE,
+              old_environment_entry,
+              new_environment_entry,
+              verbose: false
+    say_status :add_db, "#{CABLE_DB} -> #{environment} (database.yml)"
+  end
+
+  # 5. run the Solid Errors installation generator
+  # NOTE: we run the command directly instead of via the `generate` helper
+  # because that doesn't allow passing arbitrary environment variables.
+  run_or_error "bin/rails generate solid_cable:install", env: { "DATABASE" => CABLE_DB }
+
+  # 6. run the migrations for the new database
+  # NOTE: we run the command directly instead of via the `rails_command` helper
+  # because that runs `bin/rails` through Ruby, which we can't test properly.
+  if INSTALL_INTO == "application"
+    run_or_error "bin/rails db:migrate", env: { "DATABASE" => CABLE_DB }
+  else
+    say_status :NOTE, "Be sure to run Solid Cable migrations in production", :blue
+  end
+
+  # 7. configure the application to use Solid Cable in all environments with the new database
+  if INSTALL_INTO == "application"
+    remove_file(CABLE_FILE)
+    create_file(CABLE_FILE, <<~YAML)
+      default: &default
+        adapter: solid_cable
+        polling_interval: 1.second
+        keep_messages_around_for: 1.day
+        connects_to:
+          database:
+            writing: #{CABLE_DB}
+
+      development:
+        <<: *default
+        silence_polling: true
+
+      test:
+        <<: *default
+
+      production:
+        <<: *default
+        polling_interval: 0.1.seconds
+    YAML
+  else
+    old_production_cable_config = <<~YAML
+      production:
+        adapter: redis
+        url: <%%= ENV.fetch("REDIS_URL") { "redis://localhost:6379/1" } %>
+        channel_prefix: <%= app_name %>_production
+    YAML
+    new_production_cable_config = <<~YAML
+      production:
+        adapter: solid_cable
+        connects_to:
+          database:
+            writing: #{CABLE_DB}
+        polling_interval: 0.1.seconds
+        keep_messages_around_for: 1.day
+    YAML
+    gsub_file("config/cable.yml",
+                  old_production_cable_config,
+                  new_production_cable_config)
+  end
+end
+
 # Add Litestream
 unless SKIP_LITESTREAM
   # 1. add the litestream gem
@@ -592,93 +680,5 @@ unless SKIP_SOLID_ERRORS
         "\\1#{password} = Rails.application.credentials.dig(:solid_errors, :password)",
       ].join("\n")
     end
-  end
-end
-
-# Add Solid Cable
-unless SKIP_SOLID_CABLE
-  # 1. add the appropriate solid_errors gem version
-  add_gem "solid_cable", "~> 1.0", comment: "Add Solid Cable for web sockets"
-
-  # 2. install the gem
-  bundle_install
-
-  # 3. define the new database configuration
-  database_yaml = DatabaseYAML.new path: File.expand_path(DATABASE_FILE, destination_root)
-  # NOTE: this `insert_into_file` call is idempotent because we are only inserting a plain string.
-  insert_into_file DATABASE_FILE,
-                  database_yaml.new_database(CABLE_DB) + "\n",
-                  after: database_yaml.database_def_regex(ERRORS_DB),
-                  verbose: false
-  say_status :def_db, "#{CABLE_DB} (database.yml)"
-
-  # 4. add the new database configuration to all environments
-  database_yaml.add_database(CABLE_DB).each do |environment, old_environment_entry, new_environment_entry|
-    next if INSTALL_INTO != "application" and environment != "production"
-
-    # NOTE: this `gsub_file` call is idempotent because we are only finding and replacing plain strings.
-    gsub_file DATABASE_FILE,
-              old_environment_entry,
-              new_environment_entry,
-              verbose: false
-    say_status :add_db, "#{CABLE_DB} -> #{environment} (database.yml)"
-  end
-
-  # 5. run the Solid Errors installation generator
-  # NOTE: we run the command directly instead of via the `generate` helper
-  # because that doesn't allow passing arbitrary environment variables.
-  run_or_error "bin/rails generate solid_cable:install", env: { "DATABASE" => CABLE_DB }
-
-  # 6. run the migrations for the new database
-  # NOTE: we run the command directly instead of via the `rails_command` helper
-  # because that runs `bin/rails` through Ruby, which we can't test properly.
-  if INSTALL_INTO == "application"
-    run_or_error "bin/rails db:migrate", env: { "DATABASE" => CABLE_DB }
-  else
-    say_status :NOTE, "Be sure to run Solid Cable migrations in production", :blue
-  end
-
-  # 7. configure the application to use Solid Cable in all environments with the new database
-  if INSTALL_INTO == "application"
-    remove_file(CABLE_FILE)
-    create_file(CABLE_FILE, <<~YAML)
-      default: &default
-        adapter: solid_cable
-        polling_interval: 1.second
-        keep_messages_around_for: 1.day
-        connects_to:
-          database:
-            writing: #{CABLE_DB}
-
-      development:
-        <<: *default
-        silence_polling: true
-
-      test:
-        <<: *default
-
-      production:
-        <<: *default
-        polling_interval: 0.1.seconds
-    YAML
-  else
-    old_production_cable_config = <<~YAML
-      production:
-        adapter: redis
-        url: <%%= ENV.fetch("REDIS_URL") { "redis://localhost:6379/1" } %>
-        channel_prefix: <%= app_name %>_production
-    YAML
-    new_production_cable_config = <<~YAML
-      production:
-        adapter: solid_cable
-        connects_to:
-          database:
-            writing: #{CABLE_DB}
-        polling_interval: 0.1.seconds
-        keep_messages_around_for: 1.day
-    YAML
-    gsub_file("config/cable.yml",
-                  old_production_cable_config,
-                  new_production_cable_config)
   end
 end
