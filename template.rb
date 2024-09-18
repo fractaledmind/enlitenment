@@ -459,8 +459,8 @@ unless SKIP_SOLID_CABLE
         keep_messages_around_for: 1.day
     YAML
     gsub_file("config/cable.yml",
-                  old_production_cable_config,
-                  new_production_cable_config)
+              old_production_cable_config,
+              new_production_cable_config)
   end
 end
 
