@@ -40,8 +40,8 @@ APPLICATION_FILE = "config/application.rb".freeze
 PRODUCTION_FILE = "config/environments/production.rb".freeze
 DATABASE_FILE = "config/database.yml".freeze
 ROUTES_FILE = "config/routes.rb".freeze
-CACHE_FILE = (AT_LEAST_RAILS_8 ? "config/cache.yml" : "config/solid_cache.yml").freeze
-QUEUE_FILE = (AT_LEAST_RAILS_8 ? "config/queue.yml" : "config/solid_queue.yml").freeze
+CACHE_FILE = "config/cache.yml".freeze
+QUEUE_FILE = "config/queue.yml".freeze
 CABLE_FILE = "config/cable.yml".freeze
 LITESTREAM_FILE = "config/initializers/litestream.rb".freeze
 
