@@ -322,7 +322,7 @@ unless SKIP_SOLID_CACHE
   # NOTE: this `insert_into_file` call is idempotent because we are only inserting a plain string.
   insert_into_file DATABASE_FILE,
                    database_yaml.new_database(CACHE_DB) + "\n",
-                   after: database_yaml.database_def_regex(QUEUE_DB),
+                   after: database_yaml.database_def_regex("default"),
                    verbose: false
   say_status :def_db, "#{CACHE_DB} (database.yml)"
 
@@ -393,7 +393,7 @@ unless SKIP_SOLID_CABLE
   # NOTE: this `insert_into_file` call is idempotent because we are only inserting a plain string.
   insert_into_file DATABASE_FILE,
                   database_yaml.new_database(CABLE_DB) + "\n",
-                  after: database_yaml.database_def_regex(ERRORS_DB),
+                  after: database_yaml.database_def_regex("default"),
                   verbose: false
   say_status :def_db, "#{CABLE_DB} (database.yml)"
 
@@ -575,7 +575,7 @@ unless SKIP_SOLID_ERRORS
   # NOTE: this `insert_into_file` call is idempotent because we are only inserting a plain string.
   insert_into_file DATABASE_FILE,
                   database_yaml.new_database(ERRORS_DB) + "\n",
-                  after: database_yaml.database_def_regex(CACHE_DB),
+                  after: database_yaml.database_def_regex("default"),
                   verbose: false
   say_status :def_db, "#{ERRORS_DB} (database.yml)"
 
