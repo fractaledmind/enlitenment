@@ -383,7 +383,7 @@ end
 # Add Solid Cable
 unless SKIP_SOLID_CABLE
   # 1. add the appropriate solid_errors gem version
-  add_gem "solid_cable", "~> 1.0", comment: "Add Solid Cable for web sockets"
+  add_gem "solid_cable", "~> 3.0", comment: "Add Solid Cable for web sockets"
 
   # 2. install the gem
   bundle_install
