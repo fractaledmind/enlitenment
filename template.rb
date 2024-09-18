@@ -417,11 +417,7 @@ unless SKIP_SOLID_CABLE
   # 6. run the migrations for the new database
   # NOTE: we run the command directly instead of via the `rails_command` helper
   # because that runs `bin/rails` through Ruby, which we can't test properly.
-  if INSTALL_INTO == "application"
-    run_or_error "bin/rails db:migrate", env: { "DATABASE" => CABLE_DB }
-  else
-    say_status :NOTE, "Be sure to run Solid Cable migrations in production", :blue
-  end
+  run_or_error "bin/rails db:prepare", env: { "DATABASE" => CABLE_DB }
 
   # 7. configure the application to use Solid Cable in all environments with the new database
   if INSTALL_INTO == "application"
