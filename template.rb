@@ -174,7 +174,7 @@ end
 # Add Solid Queue
 unless SKIP_SOLID_QUEUE
   # 1. add the appropriate solid_queue gem version
-  add_gem "solid_queue", "~> 0.8", comment: "Add Solid Queue for background jobs"
+  add_gem "solid_queue", "~> 0.9", comment: "Add Solid Queue for background jobs"
 
   # 2. install the gem
   bundle_install
